@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,10 +23,20 @@
 """
 EnergyPlus Shadow Parameters
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
 
     Args:
-        timestep_: A number between 1 and 60 that represents the number of timesteps per hour at which the simulation will be run.  The default is set to 6 timesteps per hour, which means that the energy balance calculation is run every 10 minutes of the year.
+        timestep_: It is the number of times simulation will be performed in an hour.
+        -
+        You can choose any number from 1,2,3,4,5,6,10,12,15,20,30, and 60 as the timestep. Generally speaking, the shorter the time step, the longer it takes to finish the simulation. The biggest timestep is 60 minutes. That will mean that the simulation will for every one hour for the year. 
+        -
+        It is advisable to use the timestep of 60 minutes only in a case when no HVAC system is envisaged, accuracy not a primary concern, and simulation run time is critical.
+        -
+        In summary, shorter timesteps improve how calculation models for surface temperature and zone air temperature are coupled together and therefore, shorter timesteps are recommended. On the other side, longer timesteps introduce more lag in temperature distribution and as a result, offers a less dynamic behavior.
+        -
+        The default is set to 6 timesteps per hour, which means that the energy balance calculation is run every 10 minutes of the year. This is a recommended default for simulations with HVAC.
+        -
+        Other suggested defaults are 4 for non-HVAC simulations. Simulating green roofs require more timesteps per hour. 
         shadowCalcPar_: An optional set of shadow calculation parameters from the "Honeybee_ShadowPar" component.
         solarDistribution_: An optional text string or integer that sets the solar distribution calculation.  Choose from the following options:
             0 = "MinimalShadowing" - In this case, exterior shadowing is only computed for windows and not for other opaque surfaces that might have their surface temperature affected by the sun. All beam solar radiation entering the zone is assumed to fall on the floor. A simple window view factor calculation will be used to distribute incoming diffuse solar energy between interior surfaces.
@@ -61,7 +71,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Energy Simulation Par"
 ghenv.Component.NickName = 'EnergySimPar'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -132,8 +142,15 @@ def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile
     if coolingSizingFactor == None:
         coolingSizingFactor = 1.15
     
+    finalHoliday = []
+    for holiday in holidays:
+        if holiday == "" or holiday == None:
+            pass
+        else:
+            finalHoliday.append(holiday)
+    
     if (monthlyGrndTemps == [] or len(monthlyGrndTemps) == 12):
-        return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + [monthlyGrndTemps] + [holidays]  + [startDayOfWeek] + [heatingSizingFactor] + [coolingSizingFactor]
+        return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + [monthlyGrndTemps] + [finalHoliday]  + [startDayOfWeek] + [heatingSizingFactor] + [coolingSizingFactor]
     else:
         if monthlyGrndTemps != [] and len(monthlyGrndTemps) != 12:
             warning = 'monthlyGrndTemps_ must either be left blank or contain 12 values representing the average ground temperature for each month.'

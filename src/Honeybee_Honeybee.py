@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -36,7 +36,7 @@ along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
 Source code is available at: https://github.com/mostaphaRoudsari/Honeybee
 
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         defaultFolder_: Optional input for Honeybee default folder.
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nJAN_04_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_18_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -82,6 +82,12 @@ import uuid
 import re
 import random
 import zipfile
+
+try:
+    System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
+except AttributeError:
+    # TLS 1.2 not provided by MacOS .NET Core; revert to using TLS 1.0
+    System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls
 
 PI = math.pi
 
@@ -812,7 +818,9 @@ class RADMaterialAux(object):
         
         self.HoneybeeFolder = HoneybeeFolder
         self.radMaterialLibrary = materialLibrary
-        self.radMatTypes = ["plastic", "glass", "trans", "metal", "mirror", "texfunc", "mixedfunc", "dielectric", "transdata", "light", "glow"]
+        self.radMatTypes = ["plastic", "glass", "trans", "metal",
+            "mirror", "texfunc", "mixedfunc", "dielectric", "transdata",
+            "light", "glow", "BRTDfunc"]
         
         if reloadRADMaterial:
                         
@@ -1119,9 +1127,17 @@ class RADMaterialAux(object):
         Returns:
             A list of strings. Each string represents a differnt Rdiance Object
         """
-        rawRadObjects = re.findall(r'(\n|^)(\w*(\h*\w.*\n){1,})', radFileString + "\n",re.MULTILINE)
+        raw_rad_objects = re.findall(
+            r'^\s*([^0-9].*(\s*[\d|.]+.*)*)',
+            radFileString,
+            re.MULTILINE)
+    
+        radObjects = (' '.join(radiance_object[0].split())
+                      for radiance_object in raw_rad_objects)
+
+        radObjects = tuple(obj for obj in radObjects if obj and obj[0] != '#')
         
-        return [("").join(radObject[:-1]) for radObject in rawRadObjects]
+        return radObjects
     
     def getRadianceObjectsFromFile(self, radFilePath):
         """
@@ -1678,13 +1694,14 @@ class hb_WriteRAD(object):
             if analysisRecipe.type == 2 and analysisRecipe.northDegrees!=0:
                 print "Rotating the scene for %d degrees"%analysisRecipe.northDegrees
                 
-                transform = rc.Geometry.Transform.Rotation(math.radians(analysisRecipe.northDegrees), \
+                transform = rc.Geometry.Transform.Rotation(-math.radians(analysisRecipe.northDegrees), \
                             rc.Geometry.Point3d.Origin)
                 rotateObjects = True
             
             for objCount, HBObj in enumerate(HBObjects):
                 
-                if rotateObjects: HBObj.transform(transform, None, False)
+                if rotateObjects:
+                    HBObj.transform(transform, None, False)
                 
                 # check if the object is zone or a surface (?)
                 if HBObj.objectType == "HBZone":
@@ -1851,12 +1868,16 @@ class hb_WriteRAD(object):
         if simulationType == 2:
             dynamicShadingRecipes = analysisRecipe.DSParameters.DShdR
             
-            if  len(dynamicShadingRecipes) == 0: return radFileFullName, materialFileName
+            if  len(dynamicShadingRecipes) == 0:
+                return radFileFullName, materialFileName
             
             customRADMat = {} # dictionary to collect the custom material names
             customMixFunRadMat = {} # dictionary to collect the custom mixfunc material names
             
             for shadingRecipe in dynamicShadingRecipes:
+                
+                if analysisRecipe.type == 2 and analysisRecipe.northDegrees!=0:
+                    print "Rotating %s for %d degrees" % (shadingRecipe.name, analysisRecipe.northDegrees)
                 
                 if shadingRecipe.type == 2:
                     
@@ -1873,6 +1894,8 @@ class hb_WriteRAD(object):
                             shdHBObjects = hb_hive.callFromHoneybeeHive(shadingState.shdHBObjects)
                             
                             for HBObj in shdHBObjects:
+                                if rotateObjects:
+                                    HBObj.transform(transform, None, False)                                
                                 # collect the custom material informations
                                 if HBObj.RadMaterial!=None:
                                         customRADMat, customMixFunRadMat = self.hb_RADMaterialAUX.addRADMatToDocumentDict(HBObj, customRADMat, customMixFunRadMat)
@@ -1931,7 +1954,7 @@ class hb_WriteRAD(object):
         if analysisRecipe.type == 2 and analysisRecipe.northDegrees!=0:
             print "Rotating test points for %d degrees"%analysisRecipe.northDegrees
             
-            transform = rc.Geometry.Transform.Rotation(math.radians(analysisRecipe.northDegrees), \
+            transform = rc.Geometry.Transform.Rotation(-math.radians(analysisRecipe.northDegrees), \
                         rc.Geometry.Point3d.Origin)
             
             for pt in flattenTestPoints: pt.Transform(transform)
@@ -2030,11 +2053,28 @@ class hb_WriteRAD(object):
             
             initBatchFile = open(initBatchFileName, "w")
             initBatchFile.write(pathStr)
+            
+            
+            xformCmds = []
+            if additionalRadFiles and northAngleRotation != 0:
+                # rotate additional radiance files:
+                cmdbase = 'xform -rz -%f {} > {}' % northAngleRotation
+                
+                for count, adfile in enumerate(additionalRadFiles):
+                    target = adfile[:-4] + '_' + str(northAngleRotation) + adfile[-4:]
+                    xformCmds.append(cmdbase.format(adfile, target))
+                    additionalRadFiles[count] = target
+            
             initBatchStr =  os.path.splitdrive(self.hb_DSPath)[0] + '\n' + \
                             'CD ' + self.hb_DSPath + '\n' + \
-                            'epw2wea  ' + subWorkingDir + "\\" + self.lb_preparation.removeBlankLight(locName) + '.epw ' + subWorkingDir + "\\" +  self.lb_preparation.removeBlankLight(locName) + '.wea\n' + \
-                            ':: 1. Generate Daysim version of Radiance Files\n' + \
+                            'epw2wea  ' + subWorkingDir + "\\" + self.lb_preparation.removeBlankLight(locName) + '.epw ' + subWorkingDir + "\\" +  self.lb_preparation.removeBlankLight(locName) + '.wea\n'
+                            
+            if xformCmds:
+                initBatchStr += ':: Rotate additional files if any\n' + '\n'.join(xformCmds) + '\n'
+            
+            initBatchStr += ':: 1. Generate Daysim version of Radiance Files\n' + \
                             'radfiles2daysim ' + heaFileName + ' -m -g\n'
+            
             
             # rotate scene if angle is not 0!
             #if northAngleRotation!=0:
@@ -2247,10 +2287,14 @@ class hb_WriteRAD(object):
                         pcomposLine = "pcompos -a " + `nXDiv` + " "
                         # pieces.reverse()
                         for piece in pieces:
-                            pcomposLine += piece + " "
-                        pcomposLine += " > " + mergedName + "\n"
+                            pcomposLine += piece.replace('.HDR', '.unf') + " "
+                        pcomposLine += " > " + mergedName.replace('.HDR', '_temp.HDR') + "\n"
                         
                         pcompFile.write(pcomposLine)
+                    
+                        pfiltLine = "pfilt -r .6 -x /2 -y /2 {} > {}\n" \
+                            .format(mergedName.replace('.HDR', '_temp.HDR'), mergedName)
+                        pcompFile.write(pfiltLine)
             
             return initBatchFileName, batchFiles, fileNames, pcompFileName, HDRFileAddress
                         
@@ -2466,7 +2510,10 @@ class hb_WriteRAD(object):
                     glzCoordinateLists = surface.extractGlzPoints(True)
                     for glzCount, glzCoorList in enumerate(glzCoordinateLists):
                         # glazingStr
-                        fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
+                        try:
+                            fullStr.append(self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList))
+                        except:
+                            fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
                         
                         # shift glazing list
                         glzCoorList = self.shiftList(glzCoorList)
@@ -2518,7 +2565,10 @@ class hb_WriteRAD(object):
             coordinatesList = [coordinatesList]
         for glzCount, glzCoorList in enumerate(coordinatesList):
             # glazingStr`
-            fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
+            try:
+                fullStr.append(self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList))
+            except:
+                fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
         return ''.join(fullStr)
 
 class hb_WriteRADAUX(object):
@@ -3114,11 +3164,8 @@ class hb_WriteRADAUX(object):
                 line1_2 += "-%s  "%par
         
         line1_3 = " -e error.log " + octFile + " > " + unfFile + "\n"
-                
-    
-        line2 = "pfilt -1 -r .6 -x/2 -y/2 " + unfFile + " > " + outputFile + "\n"
         
-        return line0 + line1_1 + line1_2 + line1_3 + line2
+        return line0 + line1_1 + line1_2 + line1_3
         
         
     def falsecolorLine(self, projectName, viewName):
@@ -3347,7 +3394,6 @@ class hb_WriteDS(object):
                 elif controlSystem == "AutomatedThermalControl":
                     if glareControlRecipe!=None:
                         controlSystem = "AutomatedGlareControl"
-                        exteriorSensor = glareControlRecipe.exteriorSensor
                         threshold = glareControlRecipe.threshold
                         minAz = glareControlRecipe.minAz
                         maxAz = glareControlRecipe.maxAz
@@ -4930,10 +4976,19 @@ class EPZone(object):
         self.objectType = "HBZone"
         self.origin = rc.Geometry.Point3d.Origin
         self.geometry = zoneBrep
-        
+        self.zoneType = 1
+        self.multiplier = 1
+        self.ceilingHeight = ''
+        self.volume = ''
+        self.floorArea = ''
+        self.insideConvectionAlgorithm = ''
+        self.outsideConvectionAlgorithm = ''
+        self.partOfArea = True
+        self.isPlenum = False        
         self.num = zoneID
         self.ID = str(uuid.uuid4())
         self.name = self.cleanName(zoneName)
+        
         self.hasNonPlanarSrf = False
         self.hasInternalEdge = False
         
@@ -5190,14 +5245,22 @@ class EPZone(object):
         
         def checkSrfNormal(HBSrf, anchorPts, nVecs, planarTrigger):
             #Find the corresponding surface in the closed zone geometry.
+            tol = sc.doc.ModelAbsoluteTolerance
             for count, cenpt in enumerate(anchorPts):
                 #If the center points are the same, then these two represent the same surface.
-                if cenpt == HBSrf.cenPt:
+                if cenpt.X <= HBSrf.cenPt.X +tol and cenpt.X >= HBSrf.cenPt.X - tol and cenpt.Y <= HBSrf.cenPt.Y +tol and cenpt.Y >= HBSrf.cenPt.Y - tol and cenpt.Z <= HBSrf.cenPt.Z +tol and cenpt.Z >= HBSrf.cenPt.Z - tol:
                     if nVecs[count] != HBSrf.normalVector:
                         print "Normal direction for " + HBSrf.name + " is fixed by Honeybee!"
                         HBSrf.geometry.Flip()
                         HBSrf.normalVector.Reverse()
                         HBSrf.basePlane.Flip()
+                        # change the surface type if need be.
+                        if HBSrf.srfTypeByUser == False:
+                            if int(HBSrf.type) == 2:
+                                HBSrf.setType(1)
+                            elif int(HBSrf.type) == 1 or int(HBSrf.type) == 3:
+                                HBSrf.setType(2)
+                        
                         try: HBSrf.punchedGeometry.Flip()
                         except: pass
                         if HBSrf.hasChild and HBSrf.isPlanar:
@@ -6545,10 +6608,13 @@ class hb_EPSurface(object):
         """Transform EPSurface using a transform object
            Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
         """
-        if newKey == None:
-            self.name += str(uuid.uuid4())[:8]
-        elif newKey != None:
-            self.name += newKey
+        try:
+            if newKey == None:
+                self.name += str(uuid.uuid4())[:8]
+            elif newKey != None:
+                self.name += newKey
+        except:
+            pass
         self.geometry.Transform(transform)
         self.meshedFace.Transform(transform)
         # move center point and normal
@@ -6567,14 +6633,15 @@ class hb_EPSurface(object):
             self.getAngle2North()
         except:
             pass
-        
-        # Deal with the boundary conditions.
-        if clearBC:
-            self.setBC("Outdoors", False)
-            self.setBCObjectToOutdoors()
-        elif self.BCObject.name != '':
-            self.BCObject = copy.deepcopy(self.BCObject)
-            self.BCObject.name = self.BCObject.name + newKey
+        try:
+            if clearBC:
+                self.setBC("Outdoors", False)
+                self.setBCObjectToOutdoors()
+            elif self.BCObject.name != '':
+                self.BCObject = copy.deepcopy(self.BCObject)
+                self.BCObject.name = self.BCObject.name + newKey
+        except:
+            pass
         
         if not self.isChild and self.hasChild:
             self.punchedGeometry.Transform(transform)
@@ -7109,17 +7176,13 @@ class hb_GlzGeoGeneration(object):
     def createGlazingForRect(self, rectBrep, glazingRatio, windowHeight, sillHeight, breakUpDist, splitGlzVertDist, conversionFactor):
         #Define a default window height, sill height, breakup distance and vertical glazing dist of windows.
         if windowHeight != None: winHeight = windowHeight
-        else: winHeight = 2
-        winHeight = winHeight/conversionFactor
+        else: winHeight = 2/conversionFactor
         if sillHeight != None: silHeight = sillHeight
-        else: silHeight = 0.8
-        silHeight = silHeight/conversionFactor
+        else: silHeight = 0.8/conversionFactor
         if breakUpDist != None: distBreakup = breakUpDist
-        else: distBreakup = 2
-        distBreakup = distBreakup/conversionFactor
+        else: distBreakup = 2/conversionFactor
         if splitGlzVertDist != None: splitVertDist = splitGlzVertDist
-        else: splitVertDist = 0
-        splitVertDist = splitVertDist/conversionFactor
+        else: splitVertDist = 0/conversionFactor
         
         
         if rectBrep:
@@ -7688,56 +7751,22 @@ class PV_gen(object):
     Generator:WindTurbine
     """
     
-    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperformobject,SA_solarcells,cell_n,sandia):
+    def __init__(self,_name,mountedsurface_,No_parallel,No_series,powerout,SA_solarcells,cell_n):
         
         self.name = _name
-        self.surfacename = surfacename_
+        self.mountedSurface = mountedsurface_
         self.type = 'Generator:Photovoltaic'
         
-        self.integrationmode = _integrationmode
         self.NOparallel = No_parallel
         self.NOseries = No_series
-        
-        self.namePVperformobject =  namePVperformobject # One Photovoltaic performance object is made for each PV object so names are the same
         
         # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
         # number in series by number in parallel.
         
-        self.cost_ = costper_module*No_series*No_parallel
         self.powerout = powerout*No_series*No_parallel
         
         self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
-    
-        if sandia == []:
-            
-            self.mode = 'simple'
-            self.performancetype = 'PhotovoltaicPerformance:Simple'
-            
-            # Use PhotovoltaicPerformance:Simple, call the method below.
-            
-            self.PV_performanceSimple(namePVperformobject,SA_solarcells,cell_n)
-            
-        if sandia != []:
-            
-            # Use PhotovoltaicPerformance:Sandia,
-            
-            self.mode = 'sandia'
-            self.performancetype = 'PhotovoltaicPerformance:Sandia'
-            
-            self.PV_performanceSandia(sandia,namePVperformobject)
-            
-    def PV_performanceSimple(self,namePVperformobject,SA_solarcells,cell_n,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
-    
-        self.namePVperformobject = namePVperformobject
-        self.surfaceareacells = SA_solarcells
-        self.cellefficiencyinputmode = cell_efficiencyinputmode
-        self.efficiency = cell_n
-        self.schedule = schedule_
         
-        
-    def PV_performanceSandia(self,sandia,namePVperformobject):
-        
-        self.sandia = sandia
 
 class PVinverter(object):
     
@@ -8570,6 +8599,7 @@ class SerializeObjects(object):
             self.data = pickle.load(inf)
 
 
+
 class hb_hvacProperties(object):
     def __init__(self):
         
@@ -8590,11 +8620,10 @@ class hb_hvacProperties(object):
         11:'FAN COIL UNITS + DOAS',
         12:'ACTIVE CHILLED BEAMS + DOAS',
         13:'RADIANT FLOORS + DOAS',
-        14:'RADIANT CEILINGS + DOAS',
-        15:'HEATED FLOORS + VAV COOLING',
+        14:'CUSTOM RAD SURFACES + DOAS',
+        15:'HEATED SURFACES + VAV COOLING',
         16:'VRF + DOAS',
-        17:'GROUND SOURCE WSHP + DOAS',
-        18:'GROUND SOURCE VRF + DOAS'
+        17:'WSHP + DOAS'
         }
         
         # Dictionaries that state which features can be changed for each of the different systems.
@@ -8617,74 +8646,70 @@ class hb_hvacProperties(object):
         14: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         15: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         16: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
-        17: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
-        18: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
+        17: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
         }
         
         self.airCapabilities = {
-        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'airSysHardSize': False, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        15: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        16: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        17: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        18: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
+        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'airSysHardSize': False, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': False, 'Econ' : True, 'HeatRecov' : True},
+        1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Recirculation': False, 'Econ' : False, 'HeatRecov' : False},
+        2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Recirculation': False, 'Econ' : False, 'HeatRecov' : False},
+        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': True, 'Econ' : True, 'HeatRecov' : True},
+        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': True, 'Econ' : True, 'HeatRecov' : True},
+        5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': True, 'Econ' : True, 'HeatRecov' : True},
+        6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Recirculation': True, 'Econ' : True, 'HeatRecov' : True},
+        7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': True, 'Econ' : True, 'HeatRecov' : True},
+        8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Recirculation': True, 'Econ' : True, 'HeatRecov' : True},
+        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': True, 'Econ' : True, 'HeatRecov' : True},
+        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': True, 'Econ' : True, 'HeatRecov' : True},
+        11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': False, 'Econ' : True, 'HeatRecov' : True},
+        12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': False, 'Econ' : True, 'HeatRecov' : True},
+        13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': False, 'Econ' : True, 'HeatRecov' : True},
+        14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': False, 'Econ' : True, 'HeatRecov' : True},
+        15: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': True, 'Econ' : True, 'HeatRecov' : True},
+        16: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': False, 'Econ' : True, 'HeatRecov' : True},
+        17: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Recirculation': False, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
-        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        1: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
-        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'CentralPlant' : True},
-        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
-        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
-        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True}
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : False},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': False, 'CentralPlant' : True},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : True},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : True},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'HeatHardSize': True, 'CentralPlant' : True},
+        16: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : True},
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : True}
         }
         
         self.coolCapabilities = {
-        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : False},
-        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : False},
-        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
-        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : True},
-        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False},
-        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False}
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        16: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : True, 'ChillType' : True},
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : True, 'ChillType' : True}
         }
     
     @staticmethod
@@ -8712,7 +8737,7 @@ class hb_hvacProperties(object):
 class hb_airDetail(object):
     def __init__(self, HVACAvailabiltySched=None, fanTotalEfficiency=None, fanMotorEfficiency=None, fanPressureRise=None, \
         fanPlacement=None, airSysHardSize = None, centralAirLoop=None, fanControl = None, heatingSupplyAirTemp=None, \
-        coolingSupplyAirTemp=None, airsideEconomizer=None, heatRecovery=None, recoveryEffectiveness=None):
+        coolingSupplyAirTemp=None, recirculation=None, airsideEconomizer=None, sensibleHeatRecovery=None, latentHeatRecovery=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -8750,15 +8775,6 @@ class hb_airDetail(object):
         False: 'Constant Volume',
         'Variable Volume': 'Variable Volume',
         'Constant Volume': 'Constant Volume'
-        }
-        
-        self.heatRecovDict = {
-        0: 'None',
-        1: 'Sensible',
-        2: 'Enthalpy',
-        'None': 'None',
-        'Sensible': 'Sensible',
-        'Enthalpy': 'Enthalpy'
         }
         
         if HVACAvailabiltySched:
@@ -8801,6 +8817,10 @@ class hb_airDetail(object):
             self.coolingSupplyAirTemp = float(coolingSupplyAirTemp)
         else:
             self.coolingSupplyAirTemp = "Default"
+        if recirculation != None:
+            self.recirculation = recirculation
+        else:
+            self.recirculation = "Default"
         if airsideEconomizer != None:
             try:
                 self.airsideEconomizer = int(airsideEconomizer)
@@ -8808,14 +8828,14 @@ class hb_airDetail(object):
                 self.airsideEconomizer = self.economizerCntrlDict[airsideEconomizer]
         else:
             self.airsideEconomizer = "Default"
-        if heatRecovery != None:
-            self.heatRecovery = self.heatRecovDict[heatRecovery]
+        if sensibleHeatRecovery != None:
+            self.sensibleHeatRecovery = float(sensibleHeatRecovery)
         else:
-            self.heatRecovery = "Default"
-        if recoveryEffectiveness:
-            self.recoveryEffectiveness = float(recoveryEffectiveness)
+            self.sensibleHeatRecovery = "Default"
+        if latentHeatRecovery != None:
+            self.latentHeatRecovery = float(latentHeatRecovery)
         else:
-            self.recoveryEffectiveness = "Default"
+            self.latentHeatRecovery = "Default"
     
     
     @classmethod
@@ -8835,7 +8855,7 @@ class hb_airDetail(object):
                     paramList.append(None)
         
         if success == True:
-            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9], paramList[10], paramList[11], paramList[12])
+            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9], paramList[10], paramList[11], paramList[12], paramList[13])
             airDetailObj.areInputsChecked = True
             return airDetailObj
         else:
@@ -8867,13 +8887,14 @@ class hb_airDetail(object):
                 errors.append("Air Side Economizer not a valid control type.")
             else:
                 self.airsideEconomizer = self.economizerCntrlDict[self.airsideEconomizer]
-        if self.recoveryEffectiveness != 'Default':
-            if self.heatRecovery == 'Default' or self.heatRecovery == 'None':
+        if self.sensibleHeatRecovery != 'Default':
+            if self.sensibleHeatRecovery > 1 or self.sensibleHeatRecovery < 0:
                 success = False
-                errors.append("Heat recovery effectivness specified without setting heatRecovery to True.")
-            if self.recoveryEffectiveness > 1 or self.recoveryEffectiveness < 0:
+                errors.append("Sensible Heat Recovery Effeictiveness must be between 0 and 1.")
+        if self.latentHeatRecovery != 'Default':
+            if self.latentHeatRecovery > 1 or self.latentHeatRecovery < 0:
                 success = False
-                errors.append("Heat Recovery Effeictiveness must be between 0 and 1.")
+                errors.append("Latent Heat Recovery Effeictiveness must be between 0 and 1.")
         
         return success, errors
     
@@ -8900,6 +8921,8 @@ class hb_airDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SUPPLY AIR TEMPERATURE', 'airDetails'))
         if self.coolingSupplyAirTemp != 'Default' and hvacCapabilities['CoolSupTemp'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SUPPLY AIR TEMPERATURE', 'airDetails'))
+        if self.recirculation != 'Default' and hvacCapabilities['Recirculation'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'RECIRCULATION', 'airDetails'))
         if self.airsideEconomizer != 'Default' and hvacCapabilities['Econ'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'AN AIRSIDE ECONOMIZER', 'airDetails'))
         if sysInt == 0:
@@ -8907,10 +8930,10 @@ class hb_airDetail(object):
                 pass
             else:
                 errors.append('Airside economizer type ' + self.airsideEconomizer + ' is not supported for IDEAL AIR LOADS SYSTEMS.')
-        if self.heatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
+        if self.sensibleHeatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'A HEAT RECOVERY SYSTEM', 'airDetails'))
-        if self.recoveryEffectiveness != 'Default' and hvacCapabilities['HeatRecov'] == False:
-            errors.append(self.sysProps.generateWarning(sysType, 'HEAT RECOVERY EFFECTIVENESS', 'airDetails'))
+        if self.latentHeatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'A HEAT RECOVERY SYSTEM', 'airDetails'))
         
         return errors
     
@@ -8931,9 +8954,10 @@ class hb_airDetail(object):
             '  Demand Controlled Ventilation: ' + str(self.fanControl) + '\n' + \
             '  Heating Supply Air Temperature: ' + str(self.heatingSupplyAirTemp) + '\n' + \
             '  Cooling Supply Air Temperature: ' + str(self.coolingSupplyAirTemp) + '\n' + \
+            '  Air Loop Recirculation: ' + str(self.recirculation) + '\n' + \
             '  Airside Economizer Method: ' + str(self.airsideEconomizer) + '\n' + \
-            '  Heat Recovery: ' + str(self.heatRecovery) + '\n' + \
-            '  Heat Recovery Effectiveness: ' + str(self.recoveryEffectiveness)
+            '  Sensible Heat Recovery Effectiveness: ' + str(self.sensibleHeatRecovery) + '\n' + \
+            '  Latent Heat Recovery Effectiveness: ' + str(self.latentHeatRecovery)
             
             return True, textStr
         else:
@@ -8941,7 +8965,7 @@ class hb_airDetail(object):
 
 
 class hb_heatingDetail(object):
-    def __init__(self, heatingAvailSched=None, heatingEffOrCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, centralPlant=None):
+    def __init__(self, heatingAvailSched=None, heatingEffOrCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, heatHardSize = None, centralPlant=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -8964,6 +8988,10 @@ class hb_heatingDetail(object):
             self.pumpMotorEfficiency = float(pumpMotorEfficiency)
         else:
             self.pumpMotorEfficiency = "Default"
+        if heatHardSize != None:
+            self.heatHardSize = heatHardSize
+        else:
+            self.heatHardSize = "Autosize"
         if centralPlant != None:
             self.centralPlant = centralPlant
         else:
@@ -8986,7 +9014,7 @@ class hb_heatingDetail(object):
                     paramList.append(None)
         
         if success == True:
-            heatDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4])
+            heatDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5])
             heatDetailObj.areInputsChecked = True
             return heatDetailObj
         else:
@@ -9021,6 +9049,8 @@ class hb_heatingDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM SUPPLY TEMPERATURE', 'heatingDetails'))
         if self.pumpMotorEfficiency != 'Default' and heatCapabilities['PumpEff'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM PUMP MOTOR EFFICIENCY', 'heatingDetails'))
+        if self.heatHardSize != 'Autosize' and heatCapabilities['HeatHardSize'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM HARD SIZE', 'heatingDetails'))
         if self.centralPlant != 'Default' and heatCapabilities['CentralPlant'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM CENTRALIZED PLANT', 'heatingDetails'))
         
@@ -9037,6 +9067,7 @@ class hb_heatingDetail(object):
             '  Heating System Efficiency or COP: ' + str(self.heatingEffOrCOP) + '\n' + \
             '  Heating System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
             '  Heating System Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency) + '\n' + \
+            '  Heating System Hard Size: ' + str(self.heatHardSize) + '\n' + \
             '  Heating System Centralized Plant: ' + str(self.centralPlant)
             
             return True, textStr
@@ -9045,7 +9076,7 @@ class hb_heatingDetail(object):
 
 
 class hb_coolingDetail(object):
-    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, centralPlant=None, chillerType=None):
+    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, coolHardSize = None, centralPlant=None, chillerType=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -9053,10 +9084,12 @@ class hb_coolingDetail(object):
         self.objectType = "HBcool"
         
         self.chillerTypeDict = {
+        -1: 'GroundSourced',
         0: 'WaterCooled',
         1: 'AirCooled',
         'WaterCooled': 'WaterCooled',
         'AirCooled': 'AirCooled',
+        'GroundSourced': 'GroundSourced'
         }
         
         if coolingAvailSched:
@@ -9075,6 +9108,10 @@ class hb_coolingDetail(object):
             self.pumpMotorEfficiency = float(pumpMotorEfficiency)
         else:
             self.pumpMotorEfficiency = "Default"
+        if coolHardSize != None:
+            self.coolHardSize = coolHardSize
+        else:
+            self.coolHardSize = "Autosize"
         if centralPlant != None:
             self.centralPlant = centralPlant
         else:
@@ -9101,7 +9138,7 @@ class hb_coolingDetail(object):
                     paramList.append(None)
         
         if success == True:
-            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5])
+            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6])
             coolDetailObj.areInputsChecked = True
             return coolDetailObj
         else:
@@ -9136,10 +9173,17 @@ class hb_coolingDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM SUPPLY TEMPERATURE', 'coolingDetails'))
         if self.pumpMotorEfficiency != 'Default' and coolCapabilities['PumpEff'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM PUMP MOTOR EFFICIENCY', 'coolingDetails'))
+        if self.coolHardSize != 'Autosize' and coolCapabilities['CoolHardSize'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM HARD SIZE', 'coolingDetails'))
         if self.centralPlant != 'Default' and coolCapabilities['CentralPlant'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM CENTRALIZED PLANT', 'coolingDetails'))
         if self.chillerType != 'Default' and coolCapabilities['ChillType'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM HEAT REJECTION TPYE', 'coolingDetails'))
+        
+        if (sysInt == 7 or 11 <= sysInt <= 15) and self.chillerType == 'GroundSourced' and self.coolHardSize == 'Autosize':
+            errors.append('Cooling system must be hard sized when using GROUND SOURCED systems with ' + sysType)
+        elif sysInt == 17 and self.chillerType == 'AirCooled':
+            errors.append('The system ' + sysType + ' cannot be air cooled.')
         
         return errors
     
@@ -9154,12 +9198,14 @@ class hb_coolingDetail(object):
             '  Cooling System COP: ' + str(self.coolingCOP) + '\n' + \
             '  Cooling System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
             '  Cooling System Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency) + '\n' + \
+            '  Cooling System Hard Size: ' + str(self.coolHardSize) + '\n' + \
             '  Cooling System Centralized Plant: ' + str(self.centralPlant) + '\n' + \
             '  Cooling System Heat Rejection Type: ' + str(self.chillerType)
             
             return True, textStr
         else:
             return False, errors
+
 
 class OPSChoice(object):
     
@@ -9398,72 +9444,8 @@ if checkIn.letItFly:
         
         sc.sticky["honeybee_folders"] = {}
         
-        if folders.RADPath == None:
-            if os.path.isdir("c:\\radiance\\bin\\"):
-                folders.RADPath = "c:\\radiance\\bin\\"
-                print "Found installation of Radiance."
-            else:
-                msg= "Honeybee cannot find RADIANCE folder on your system.\n" + \
-                     "Make sure you have RADIANCE installed on your system.\n" + \
-                     "You won't be able to run daylighting studies without RADIANCE.\n" + \
-                     "A good place to install RADIANCE is c:\\radiance"
-                ghenv.Component.AddRuntimeMessage(w, msg)
-                folders.RADPath = ""
-        else:
-            versiFile = "\\".join(folders.RADPath.split('\\')[:-1]) + "\\NREL_ver.txt"
-            if os.path.isfile(versiFile):
-                with open(versiFile) as verFile:
-                    currentRADVersion = verFile.readline().strip()
-                print "Found installation of " + currentRADVersion + "."
-            else:
-                print "Found installation of Radiance."
-        
-        if  folders.RADPath.find(" ") > -1:
-            msg =  "There is a white space in RADIANCE filepath: " + folders.RADPath + "\n" + \
-                   "Please install RADIANCE in a valid address (e.g. c:\\radiance)"
-            ghenv.Component.AddRuntimeMessage(w, msg)
-            folders.RADPath = ""
-            
-        # I should replace this with python methods in os library
-        # looks stupid!
-        if folders.RADPath.endswith("\\"): segmentNumber = -2
-        else: segmentNumber = -1
-        hb_RADLibPath = "\\".join(folders.RADPath.split("\\")[:segmentNumber]) + "\\lib"
-        
-        sc.sticky["honeybee_folders"]["RADPath"] = folders.RADPath
-        sc.sticky["honeybee_folders"]["RADLibPath"] = hb_RADLibPath
-        
-        if folders.DSPath == None:
-            if os.path.isdir("c:\\daysim\\bin\\"):
-                folders.DSPath = "c:\\daysim\\bin\\"
-                print "Found installation of DAYSIM."
-            else:
-                msg= "Honeybee cannot find DAYSIM folder on your system.\n" + \
-                     "Make sure you have DAYISM installed on your system.\n" + \
-                     "You won't be able to run annual climate-based daylighting studies without DAYSIM.\n" + \
-                     "A good place to install DAYSIM is c:\\DAYSIM"
-                ghenv.Component.AddRuntimeMessage(w, msg)
-                folders.DSPath = ""
-        else:
-            print "Found installation of DAYSIM."
-        
-        if folders.DSPath.find(" ") > -1:
-            msg =  "There is a white space in DAYSIM filepath: " + folders.DSPath + "\n" + \
-                   "Please install Daysism in a valid address (e.g. c:\\daysim)"
-            ghenv.Component.AddRuntimeMessage(w, msg)
-            folders.DSPath = ""
-        
-        if folders.DSPath.endswith("\\"): segmentNumber = -2
-        else: segmentNumber = -1
-        hb_DSCore = "\\".join(folders.DSPath.split("\\")[:segmentNumber])
-        hb_DSLibPath = "\\".join(folders.DSPath.split("\\")[:segmentNumber]) + "\\lib"
-        
-        sc.sticky["honeybee_folders"]["DSPath"] = folders.DSPath
-        sc.sticky["honeybee_folders"]["DSCorePath"] = hb_DSCore
-        sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
-        
         # supported versions for EnergyPlus
-        EPVersions = ["V8-8-0","V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", \
+        EPVersions = ["V8-9-0", "V8-8-0","V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0", "V8-3-0", "V8-2-10", \
                       "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
@@ -9587,6 +9569,72 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["OSQtPath"] = QtFolder
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath  
         sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
+        
+        
+        # Check for an installation of Radiance.
+        if folders.RADPath == None:
+            if os.path.isdir("c:\\radiance\\bin\\"):
+                folders.RADPath = "c:\\radiance\\bin\\"
+            else:
+                msg= "Honeybee cannot find RADIANCE folder on your system.\n" + \
+                     "Make sure you have RADIANCE installed on your system.\n" + \
+                     "You won't be able to run daylighting studies without RADIANCE.\n" + \
+                     "A good place to install RADIANCE is c:\\radiance"
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                folders.RADPath = ""
+        
+        if folders.RADPath != None:
+            versiFile = "\\".join(folders.RADPath.split('\\')[:-1]) + "\\NREL_ver.txt"
+            if os.path.isfile(versiFile):
+                with open(versiFile) as verFile:
+                    currentRADVersion = verFile.readline().strip()
+                print "Found installation of " + currentRADVersion + "."
+            else:
+                print "Found installation of Radiance."
+        
+        if  folders.RADPath.find(" ") > -1:
+            msg =  "There is a white space in RADIANCE filepath: " + folders.RADPath + "\n" + \
+                   "Please install RADIANCE in a valid address (e.g. c:\\radiance)"
+            ghenv.Component.AddRuntimeMessage(w, msg)
+            folders.RADPath = ""
+        
+        if folders.RADPath.endswith("\\"): segmentNumber = -2
+        else: segmentNumber = -1
+        hb_RADLibPath = "\\".join(folders.RADPath.split("\\")[:segmentNumber]) + "\\lib"
+        
+        sc.sticky["honeybee_folders"]["RADPath"] = folders.RADPath
+        sc.sticky["honeybee_folders"]["RADLibPath"] = hb_RADLibPath
+        
+        
+        # Check for installation of DAYSIM
+        if folders.DSPath == None:
+            if os.path.isdir("c:\\daysim\\bin\\"):
+                folders.DSPath = "c:\\daysim\\bin\\"
+                print "Found installation of DAYSIM."
+            else:
+                msg= "Honeybee cannot find DAYSIM folder on your system.\n" + \
+                     "Make sure you have DAYISM installed on your system.\n" + \
+                     "You won't be able to run annual climate-based daylighting studies without DAYSIM.\n" + \
+                     "A good place to install DAYSIM is c:\\DAYSIM"
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                folders.DSPath = ""
+        else:
+            print "Found installation of DAYSIM."
+        
+        if folders.DSPath.find(" ") > -1:
+            msg =  "There is a white space in DAYSIM filepath: " + folders.DSPath + "\n" + \
+                   "Please install Daysism in a valid address (e.g. c:\\daysim)"
+            ghenv.Component.AddRuntimeMessage(w, msg)
+            folders.DSPath = ""
+        
+        if folders.DSPath.endswith("\\"): segmentNumber = -2
+        else: segmentNumber = -1
+        hb_DSCore = "\\".join(folders.DSPath.split("\\")[:segmentNumber])
+        hb_DSLibPath = "\\".join(folders.DSPath.split("\\")[:segmentNumber]) + "\\lib"
+        
+        sc.sticky["honeybee_folders"]["DSPath"] = folders.DSPath
+        sc.sticky["honeybee_folders"]["DSCorePath"] = hb_DSCore
+        sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
         
         
         # Check for an installation of THERM.

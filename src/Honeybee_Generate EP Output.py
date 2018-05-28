@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari and Chris Mackey <mostapha@ladybug.tools and chris@mackeyarchitecture.com> 
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari and Chris Mackey <mostapha@ladybug.tools and chris@mackeyarchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ http://bigladdersoftware.com/epx/docs/8-3/input-output-reference/
 _
 You can also use the "Honeybee_Read Result Dictionary" component after running a simulation to get a list of all possible outputs that you can request from a given simulation.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         zoneEnergyUse_: Set to "True" to have EnergyPlus solve for basic building energy use such as heating, cooling, electricity for lights and electricity for plug loads for each zone.
@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_27_2017'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -101,7 +101,7 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         
         simulationOutputs.append("Output:Variable,*,Cooling Coil Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Chiller Electric Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Boiler Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Boiler Gas Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Heating Coil Total Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Heating Coil Gas Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Heating Coil Electric Energy, " + timePeriod)
@@ -116,6 +116,8 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Zone VRF Air Terminal Heating Electric Energy, "+ timePeriod)
         simulationOutputs.append("Output:Variable,*,VRF Heat Pump Cooling Electric Energy, "+ timePeriod)
         simulationOutputs.append("Output:Variable,*,VRF Heat Pump Heating Electric Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Chiller Heater System Cooling Electric Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Chiller Heater System Heating Electric Energy, "+ timePeriod)
     
     if zoneGainsAndLosses == True:
         simulationOutputs.append("Output:Variable,*,Zone Windows Total Transmitted Solar Radiation Energy, " + timePeriod)

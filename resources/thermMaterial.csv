@@ -1,4 +1,4 @@
-! {"version" : "7.5.0"}
+! {"version" : "7.6.0"}
 Index,Name,Conductivity,Absorptivity,Emissivity,Color,Type
 1,"Butadiene",0.250000,0.500000,0.900000,0x9B9B9B,0
 2,"Neoprene (Polychloroprene)",0.230000,0.500000,0.900000,0x800000,0

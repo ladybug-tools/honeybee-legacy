@@ -82,7 +82,7 @@ from __future__ import division
 
 ghenv.Component.Name = "Honeybee_IES Luminaire"
 ghenv.Component.NickName = 'iesLuminaire'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"
 #compatibleHBVersion = VER 0.0.56\nJUL_01_2016
@@ -663,9 +663,10 @@ def fixIesFile(originalPathName,_radDir_):
     fileNameFixed = fileNameOnly.replace(" ","_")
     
     if _radDir_:
-        if os.path.isdir(_radDir_):
-            assert " " not in _radDir_,"The value for _radDir_ should not have any spaces in it"
-            dirpath = os.path.join(_radDir_,'tempIesFiles')
+        if not os.path.isdir(_radDir_):
+            os.mkdir(_radDir_)
+        assert " " not in _radDir_,"The value for _radDir_ should not have any spaces in it"
+        dirpath = os.path.join(_radDir_,'tempIesFiles')
     else:
         dirpath = sc.sticky['Honeybee_DefaultFolder']
         dirpath = os.path.join(dirpath,'ies','tempIesFiles')

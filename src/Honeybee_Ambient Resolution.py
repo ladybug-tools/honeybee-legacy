@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Chris Mackey <chris@ladybug.tools> 
+# Copyright (c) 2013-2018, Chris Mackey <chris@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
 Use this component to calculate the ambient resoluation (ar) needed to resolve a detail of a diven dimension in Rhino model units. The full geometry scene of HBObjects is needed to calculate this number accurately
 The resulting ar from this component can be plugged into the Honeybee_RADParameters component.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         _HBObjects: All of the Honeybee objects that are going to be used in the daylight simulation.
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Ambient Resolution"
 ghenv.Component.NickName = 'AR'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
@@ -54,12 +54,19 @@ def main(HBObjects, minDetailDim, aa):
     if aa == None:
         aa = 0.25
     
-    # Calculate a bounding box diagonal around the HBObjects.
-    joinedMesh = rc.Geometry.Mesh()
-    for brep in HBObjects:
-        joinedMesh.Append(brep)
-    geoBB = joinedMesh.GetBoundingBox(False)
-    longestDim = geoBB.Diagonal.Length
+    # Calculate a bounding box around the HBObjects.
+    BBs = []
+    for item in HBObjects:
+        BBs.append(item.GetBoundingBox(False))
+    geoBB = BBs[0]
+    for BB in BBs:
+        geoBB.Union(BB)
+    
+    # get the longest dimension.
+    xDim = geoBB.Max.X - geoBB.Min.X
+    yDim = geoBB.Max.Y - geoBB.Min.Y
+    zDim = geoBB.Max.Z - geoBB.Min.Z
+    longestDim = max([xDim, yDim, zDim])
     
     # Calculate the ambient resolution.
     aRes = int((longestDim*aa)/minDetailDim)

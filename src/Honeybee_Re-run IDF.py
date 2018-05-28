@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -41,7 +41,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run IDF"
 ghenv.Component.NickName = 'Re-Run IDF'
-ghenv.Component.Message = 'VER 0.0.62\nJAN_04_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_09_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -183,6 +183,7 @@ def runParallelIDFs(idfFilePaths, epwFileAddress, runIt, parallel):
         for x in range(len(idfFilePaths)):
             runEP(x)
     
+    
     return resultFileAddress, eioFileAddress, rddFileAddress
 
 
@@ -246,8 +247,8 @@ if initCheck and _runIt > 0:
             
             shIdfFileName = idfFileName.replace('.idf', '')
             resultFileAddress = str(workingDir) + '\\' + str(shIdfFileName) + '.csv'
-            eioFileAddress = resultFileAddress[0].replace('.csv', '.eio')
-            rddFileAddress = resultFileAddress[0].replace('.csv', '.rdd')
+            eioFileAddress = resultFileAddress.replace('.csv', '.eio')
+            rddFileAddress = resultFileAddress.replace('.csv', '.rdd')
             print 'EnergyPlus file '+ str(shIdfFileName)+'.idf ' + 're-run successful!'
     else:
         resultFileAddress, eioFileAddress, rddFileAddress = runParallelIDFs(_idfFilePath, _epwFileAddress, _runIt, parallel_)

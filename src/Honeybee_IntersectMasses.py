@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -29,7 +29,7 @@ Note that the input here should be closed volumes that are adjacent to each othe
 Also note that, while the component has been written in a manner that rarely fails if the input geometry obeys the provisions above, there are still some very complex cases that can be incorrect.
 As such, it is recommended that you bake the output of this component and check it in Rhino before turning the breps into HBZones.  This component will get you most of the way there but these volumetric operations can be difficult to pull off with a surface modeler like Rhino so you should really check the output.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
 
     Args:
         bldgMassesBefore: A list of closed breps (polysurfaces) that you intend to turn into HBZones that do not have perfectly matching surfaces between adjacent zones (this matching is needed to contruct a correct multi-zone energy model).
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_IntersectMasses"
 ghenv.Component.NickName = 'IntersectMass'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_26_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -55,7 +55,7 @@ tol = sc.doc.ModelAbsoluteTolerance
 
 def isGeometricEquivalent(intersectCrv, massBrep):
     geometricEq = False
-    
+    isPlanar = True
     intersectCrvTest, intersectCrv = rc.Geometry.PolyCurve.TryGetPolyline(intersectCrv)
     
     if intersectCrvTest == True:
@@ -79,20 +79,102 @@ def isGeometricEquivalent(intersectCrv, massBrep):
                 if len(matchList) == len(srfBrepVert):
                     geometricEq = True
     
+    if intersectCrv == None:
+        isPlanar = False
+    elif rc.Geometry.AreaMassProperties.Compute(intersectCrv) == None:
+        isPlanar = False
+    
+    return geometricEq, isPlanar
+
+def isSrfGeoEquivalent(intersectCrv, srf):
+    geometricEq = False
+    
+    intersectCrvVert = []
+    for crv in intersectCrv.DuplicateSegments():
+        intersectCrvVert.append(crv.PointAtStart)
+    
+    srfBrep = srf.ToBrep()
+    srfBrepVert = srfBrep.DuplicateVertices()
+    
+    if len(srfBrepVert) == len(intersectCrvVert):
+        matchList = []
+        for srfVert in srfBrepVert:
+            for intVert in intersectCrvVert:
+                if srfVert.X <= intVert.X+tol and srfVert.X >= intVert.X-tol and srfVert.Y <= intVert.Y+tol and srfVert.Y >= intVert.Y-tol and srfVert.Z <= intVert.Z+tol and srfVert.Z >= intVert.Z-tol:
+                    matchList.append(1)
+        
+        if len(matchList) == len(srfBrepVert):
+            geometricEq = True
+    
     return geometricEq
 
-def getSrfCenPtandNormal(surface):
+
+
+def intersectMasses(bldgNum, building, otherBldg):
+    intersectLines = rc.Geometry.Intersect.Intersection.BrepBrep(building, otherBldg, sc.doc.ModelAbsoluteTolerance)[1]
+    joinedLines = rc.Geometry.Curve.JoinCurves(intersectLines, sc.doc.ModelAbsoluteTolerance)
+    
+    #Make sure that the intersection above was not just a single line.
+    if len(joinedLines) > 0:
+        joinedLine = joinedLines[0]
+        try: segmentCt = joinedLine.SpanCount
+        except: segmentCt = 1
         
-        u_domain = surface.Domain(0)
-        v_domain = surface.Domain(1)
-        centerU = (u_domain.Min + u_domain.Max)/2
-        centerV = (v_domain.Min + v_domain.Max)/2
-        
-        centerPt = surface.PointAt(centerU, centerV)
-        normalVector = surface.NormalAt(centerU, centerV)
-        
-        normalVector.Unitize()
-        return centerPt, normalVector
+        if segmentCt > 1:
+            #Test whether the infersection is of a geometrically equivalent brep face.
+            geometricEq, isPlanar = isGeometricEquivalent(joinedLine, building)
+            
+            #If the intersection is not geometrically equivalent to a brep face, there is likely an intersection. Use the harder core function of making a boolean difference.
+            if geometricEq == False:
+                if isPlanar == True:
+                    # To be sure that there's no geometric equivalence, we'll do one final test to see if there are matching area and centroids.
+                    jlProps = rc.Geometry.AreaMassProperties.Compute(joinedLine)
+                    jlCenter = jlProps.Centroid
+                    jlArea = jlProps.Area
+                    faceMatchInit = False
+                    for face in building.Faces:
+                        faceProps = rc.Geometry.AreaMassProperties.Compute(face)
+                        faceCent = faceProps.Centroid
+                        faceArea = faceProps.Area
+                        if faceCent.DistanceTo(jlCenter) < sc.doc.ModelAbsoluteTolerance and jlArea-faceArea < sc.doc.ModelAbsoluteTolerance and jlArea-faceArea > -sc.doc.ModelAbsoluteTolerance:
+                            faceMatchInit = True
+                else:
+                    faceMatchInit = False
+                
+                if faceMatchInit == False:
+                    #Try splitting the faces of the brep with the intersection curve.
+                    newBldgBreps = []
+                    for srf in building.Faces:
+                        newBrep = srf.Split([joinedLine], sc.doc.ModelAbsoluteTolerance)
+                        if newBrep.Faces.Count > building.Faces.Count:
+                            if isPlanar == True:
+                                faceMatch = False
+                                for face in newBrep.Faces:
+                                    faceProp2 = rc.Geometry.AreaMassProperties.Compute(face)
+                                    faceCent2 = faceProp2.Centroid
+                                    faceArea2 = faceProp2.Area
+                                    if faceCent2.DistanceTo(jlCenter) < sc.doc.ModelAbsoluteTolerance and jlArea-faceArea2 < sc.doc.ModelAbsoluteTolerance and jlArea-faceArea2 > -sc.doc.ModelAbsoluteTolerance:
+                                        faceMatch = True
+                                if faceMatch == True:
+                                    newBldgBreps.append(srf.Split([joinedLine], sc.doc.ModelAbsoluteTolerance))
+                            else:
+                                faceMatch = False
+                                for face in newBrep.Faces:
+                                    srfEq = isSrfGeoEquivalent(joinedLine, face)
+                                    if srfEq == True and face.IsPlanar() == True:
+                                        faceMatch = True
+                                    elif srfEq == False and face.IsPlanar() == False:
+                                        faceMatch = True
+                                if faceMatch == True:
+                                    newBldgBreps.append(srf.Split([joinedLine], sc.doc.ModelAbsoluteTolerance))
+                    
+                    try:
+                        newBuilding = rc.Geometry.Brep.JoinBreps(newBldgBreps, sc.doc.ModelAbsoluteTolerance)[0]
+                        building = newBuilding
+                    except:
+                        pass
+    
+    return building
 
 
 def main(bldgMassesBefore):
@@ -107,119 +189,25 @@ def main(bldgMassesBefore):
         try:
             #Intersect the geomtry with all buildings in the list after it.
             for otherBldg in  bldgMassesBefore[:bldgNum]:
-                intersectLines = rc.Geometry.Intersect.Intersection.BrepBrep(building, otherBldg, sc.doc.ModelAbsoluteTolerance)[1]
-                joinedLines = rc.Geometry.Curve.JoinCurves(intersectLines, sc.doc.ModelAbsoluteTolerance)
-                
-                #Make sure that the intersection above was not just a single line.
-                if len(joinedLines) > 0:
-                    try: segmentCt = joinedLines[0].SegmentCount
-                    except: segmentCt = 1
-                    
-                    if segmentCt > 1:
-                            #Test whether the infersection is of a geometrically equivalent brep face.
-                            geometricEq = isGeometricEquivalent(joinedLines[0], building)
-                            
-                            #If the intersection is not geometrically equivalent to a brep face, there is an intersection. Use the harder core function of making a boolean difference.
-                            if geometricEq == False:
-                                finalBuilding = None
-                                intersectedBuilding = rc.Geometry.Brep.CreateBooleanDifference(building, otherBldg, sc.doc.ModelAbsoluteTolerance)
-                                if intersectedBuilding:
-                                    if intersectedBuilding[0].IsValid: finalBuilding = intersectedBuilding[0]
-                                
-                                #If the boolean difference has caused volumes to stick together, use the alternate function of splitting the faces with the intersection curve.
-                                if finalBuilding:
-                                    finalBldgVol = rc.Geometry.VolumeMassProperties.Compute(finalBuilding).Volume
-                                    originalBldgVol = rc.Geometry.VolumeMassProperties.Compute(building).Volume
-                                    
-                                    if finalBldgVol <= originalBldgVol + (tol) and finalBldgVol >= originalBldgVol - tol:
-                                        building = finalBuilding
-                                    else:
-                                        #Try splitting the faces of the brep with the intersection curve (this is the fastest method but doesn't always work well).
-                                        newBldgBreps = []
-                                        for srf in building.Faces:
-                                            newBldgBreps.append(srf.Split(joinedLines, sc.doc.ModelAbsoluteTolerance))
-                                        newBuilding = rc.Geometry.Brep.JoinBreps(newBldgBreps, sc.doc.ModelAbsoluteTolerance)[0]
-                                        
-                                        #If the splitting of the faces did not produce any extra surfaces, use a last-ditch effort of creatig a brep to split the surface.
-                                        if newBuilding.Faces.Count == building.Faces.Count:
-                                            if finalBldgVol <= originalBldgVol + (tol) and finalBldgVol >= originalBldgVol - tol:
-                                                building = finalBuilding
-                                            else:
-                                                newBldgBreps = []
-                                                for count, srf in enumerate(building.Faces):
-                                                    centPt, normalVec = getSrfCenPtandNormal(srf)
-                                                    extruIntersect = rc.Geometry.Brep.CreateFromSurface(rc.Geometry.Surface.CreateExtrusion(joinedLines[0], normalVec))
-                                                    faceSrf = srf.Split(joinedLines, sc.doc.ModelAbsoluteTolerance)
-                                                    splitSrf = rc.Geometry.Brep.Split(faceSrf, extruIntersect, sc.doc.ModelAbsoluteTolerance)
-                                                    if len(splitSrf) > 0: newBldgBreps.extend(splitSrf)
-                                                    else: newBldgBreps.append(faceSrf)
-                                                building = rc.Geometry.Brep.JoinBreps(newBldgBreps, sc.doc.ModelAbsoluteTolerance)[0]
-                                        else:
-                                            building = newBuilding
-                
+                building = intersectMasses(bldgNum, building, otherBldg)
                 #Update the dictionary with the new split geometry.
                 buildingDict[bldgNum] = building
                 bldgMassesBefore[bldgNum] = building
             
             #Intersect the geomtry with all buildings in the list before it.
             for otherBldg in  bldgMassesBefore[bldgNum+1:]:
-                intersectLines = rc.Geometry.Intersect.Intersection.BrepBrep(building, otherBldg, sc.doc.ModelAbsoluteTolerance)[1]
-                joinedLines = rc.Geometry.Curve.JoinCurves(intersectLines, sc.doc.ModelAbsoluteTolerance)
-                
-                #Make sure that the intersection above was not just a single line.
-                if len(joinedLines) > 0:
-                    try: segmentCt = joinedLines[0].SegmentCount
-                    except: segmentCt = 1
-                    
-                    if segmentCt > 1:
-                            #Test whether the infersection is of a geometrically equivalent brep face.
-                            geometricEq = isGeometricEquivalent(joinedLines[0], building)
-                            
-                            #If the intersection is not geometrically equivalent to a brep face, there is an intersection. Use the harder core function of making a boolean difference.
-                            if geometricEq == False:
-                                finalBuilding = None
-                                intersectedBuilding = rc.Geometry.Brep.CreateBooleanDifference(building, otherBldg, sc.doc.ModelAbsoluteTolerance)
-                                if intersectedBuilding:
-                                    if intersectedBuilding[0].IsValid: finalBuilding = intersectedBuilding[0]
-                                
-                                #If the boolean difference has caused volumes to stick together, use the alternate function of splitting the faces with the intersection curve.
-                                if finalBuilding:
-                                    finalBldgVol = rc.Geometry.VolumeMassProperties.Compute(finalBuilding).Volume
-                                    originalBldgVol = rc.Geometry.VolumeMassProperties.Compute(building).Volume
-                                    
-                                    if finalBldgVol <= originalBldgVol + (tol) and finalBldgVol >= originalBldgVol - tol:
-                                        building = finalBuilding
-                                    else:
-                                        #Try splitting the faces of the brep with the intersection curve (this is the fastest method but doesn't always work well).
-                                        newBldgBreps = []
-                                        for srf in building.Faces:
-                                            newBldgBreps.append(srf.Split(joinedLines, sc.doc.ModelAbsoluteTolerance))
-                                        newBuilding = rc.Geometry.Brep.JoinBreps(newBldgBreps, sc.doc.ModelAbsoluteTolerance)[0]
-                                        
-                                        #If the splitting of the faces did not produce any extra surfaces, use a last-ditch effort of creatig a brep to split the surface.
-                                        if newBuilding.Faces.Count == building.Faces.Count:
-                                            if finalBldgVol <= originalBldgVol + (tol) and finalBldgVol >= originalBldgVol - tol:
-                                                building = finalBuilding
-                                            else:
-                                                newBldgBreps = []
-                                                for count, srf in enumerate(building.Faces):
-                                                    centPt, normalVec = getSrfCenPtandNormal(srf)
-                                                    extruIntersect = rc.Geometry.Brep.CreateFromSurface(rc.Geometry.Surface.CreateExtrusion(joinedLines[0], normalVec))
-                                                    faceSrf = srf.Split(joinedLines, sc.doc.ModelAbsoluteTolerance)
-                                                    splitSrf = rc.Geometry.Brep.Split(faceSrf, extruIntersect, sc.doc.ModelAbsoluteTolerance)
-                                                    if len(splitSrf) > 0: newBldgBreps.extend(splitSrf)
-                                                    else: newBldgBreps.append(faceSrf)
-                                                building = rc.Geometry.Brep.JoinBreps(newBldgBreps, sc.doc.ModelAbsoluteTolerance)[0]
-                                        else:
-                                            building = newBuilding
-                        
+                building = intersectMasses(bldgNum, building, otherBldg)
                 #Update the dictionary with the new split geometry.
                 buildingDict[bldgNum] = building
                 bldgMassesBefore[bldgNum] = building
         except:
             buildingDict[bldgNum] = building
             bldgMassesBefore[bldgNum] = building
-            
+            warning = "Failed to intersect correctly.  Some output geometry may not be intersected."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            print warning
+        
     for bldgNum, building in buildingDict.items():
         intersectedBldgs.append(building)
     

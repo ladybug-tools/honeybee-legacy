@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -30,7 +30,7 @@ Check this link for more information about glare analysis. Thanks to Christoph R
 http://web.mit.edu/tito_/www/Projects/Glare/GlareRecommendationsForPractice.html
 
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         _HDRImagePath: Path to an HDR image file
@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nFEB_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
@@ -241,7 +241,7 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         proportion = max(x,y)/800
         resizedImage = ".".join(HDRImagePath.split(".")[:-1]) + "_resized." + HDRImagePath.split(".")[-1]
         
-        pflitLine = "/c " + hb_RADPath + "\pfilt -x/" + str(proportion) + " -y/" + str(proportion) + \
+        pflitLine = "/c " + hb_RADPath + "\pfilt -x /" + str(proportion) + " -y /" + str(proportion) + \
                   " " + HDRImagePath +" > " + resizedImage
 
         out, err = runCmdAndGetTheResults(pflitLine)

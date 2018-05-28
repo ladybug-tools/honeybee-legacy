@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com.com> 
+# Copyright (c) 2013-2018, Chris Mackey <Chris@MackeyArchitecture.com.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Use this component to adjust the U-value an EP construction without any thermal bridges to account for birdges by adjusting the condutivity of one of the materials.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
 
     Args:
         _originalEPConstruction: An EP construction that does not have any thermal bridges associated with it.
@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = 'Honeybee_Thermally Bridged EP Construction'
 ghenv.Component.NickName = 'bridgedEPConstr'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"

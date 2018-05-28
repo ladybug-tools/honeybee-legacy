@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>, Chris Mackey <chris@ladybug.tools>, and Chien Si Harriman <charriman@terabuild.com>
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>, Chris Mackey <chris@ladybug.tools>, and Chien Si Harriman <charriman@terabuild.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -25,7 +25,7 @@ Use this component to export HBZones into an OpenStudio file, and run them throu
 _
 The component outputs the report from the simulation, the file path of the IDF file, and the CSV result file from the EnergyPlus run, and two other result files that record outputs in different formats.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
@@ -71,11 +71,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_30_2017'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_18_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
+#compatibleHBVersion = VER 0.0.56\nMAY_18_2018
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -93,8 +93,14 @@ import copy
 import math
 import subprocess
 import operator
+import collections
+import platform
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
+
+assert platform.architecture()[0] == '64bit', \
+    'You must use Rhino 64-bit to run OpenStudio not {}.'.format(platform.architecture()[0])
+
 osVersion = ''
 if sc.sticky.has_key('honeybee_release'):
     if sc.sticky["honeybee_folders"]["OSLibPath"] != None:
@@ -211,7 +217,10 @@ class WriteOPS(object):
         lat = float(csheadline[6])
         lngt = float(csheadline[7])
         timeZone = float(csheadline[8])
-        elev = float(csheadline[9][:-1])
+        try:
+            elev = float(csheadline[9][:-1])
+        except:
+            elev = float(csheadline[9])
         epwfile.close()
         
         # Get the OpenStudio Model Site.
@@ -223,6 +232,9 @@ class WriteOPS(object):
         site.setLongitude(lngt)
         site.setTimeZone(timeZone)
         site.setElevation(elev)
+        
+        # Set weather file for OSM
+        ops.WeatherFile.setWeatherFile(model,ops.EpwFile(ops.Path(epwFilePath)))
     
     def setStartDayOfWeek(self, model):
         # The ability to set the start day of week currently breaks OpenStudio's way of assigning schedules.
@@ -295,10 +307,15 @@ class WriteOPS(object):
         for floorH in levels:
             story = ops.BuildingStory(model)
             story.setNominalZCoordinate(float(floorH))
-            self.levels["%.2f"%floorH] = story
+            key = "%.2f"%floorH
+            if str(key) == '-0.00':
+                key = '0.00'
+            self.levels[key] = story
     
     def setupLevels(self, zone, space):
         floorH = "%.2f"%zone.getFloorZLevel()
+        if str(floorH) == '-0.00':
+            floorH = '0.00'
         space.setBuildingStory(self.levels[floorH])
         return space
     
@@ -557,6 +574,7 @@ class WriteOPS(object):
         ['ScheduleTypeLimits', '0', '1', 'Continuous']
         ['Schedule Type', 'Lower Limit Value {BasedOnField A3}', 'Upper Limit Value {BasedOnField A3}', 'Numeric Type']
         """
+        
         values, comments = self.hb_EPScheduleAUX.getScheduleTypeLimitsDataByName(schdTypeLimitsName, ghenv.Component)
         typeLimit = ops.ScheduleTypeLimits(model)
         try: typeLimit.setLowerLimitValue(float(values[1]))
@@ -711,6 +729,8 @@ class WriteOPS(object):
             if 'dimensionless' not in typeLims.lower():
                 if typeLims.strip().lower() == 'temperature':
                     values[1] = typeLims.strip() + ' 1'
+                elif 'daysim schedule file' in typeLims.lower():
+                    values[1] = 'fractional'
                 else:
                     values[1] = typeLims.strip()
         else:
@@ -823,6 +843,18 @@ class WriteOPS(object):
         thermalZone = ops.ThermalZone(model)
         ops.OpenStudioModelHVAC.setThermalZone(space, thermalZone)
         thermalZone.setName(zone.name)
+        if zone.isPlenum or not zone.partOfArea:
+            space.partofTotalFloorArea = False
+        if zone.multiplier and zone.multiplier != 1:
+            thermalZone.setMultiplier(zone.multiplier)
+        if zone.ceilingHeight:
+            thermalZone.setCeilingHeight(zone.ceilingHeight)
+        if zone.volume:
+            thermalZone.setVolume(zone.volume)
+        if zone.insideConvectionAlgorithm:
+            thermalZone.setZoneInsideConvectionAlgorithm(zone.insideConvectionAlgorithm)
+        if zone.outsideConvectionAlgorithm:
+            thermalZone.setZoneOutsideConvectionAlgorithm(zone.outsideConvectionAlgorithm)
         return space, thermalZone
     
     ### START OF FUNCTIONS FOR CREATING HVAC SYSTEMS FROM SCRATCH ###
@@ -872,6 +904,128 @@ class WriteOPS(object):
         fan.setMotorInAirstreamFraction(1.0)
         return fan
     
+    def createDefaultGroundSourceChiller(self, model, coolingDetails, HVACCount):
+        # cooling
+        # create clgCapFuncTempCurve
+        clgCapFuncTempCurve = ops.CurveBiquadratic(model)
+        clgCapFuncTempCurve.setName('ChillerHeaterClgCapFT' +str(HVACCount))
+        clgCapFuncTempCurve.setCoefficient1Constant(0.950829)
+        clgCapFuncTempCurve.setCoefficient2x(0.03419327)
+        clgCapFuncTempCurve.setCoefficient3xPOW2(0.000266642)
+        clgCapFuncTempCurve.setCoefficient4y(-0.001733397)
+        clgCapFuncTempCurve.setCoefficient5yPOW2(-0.0001762417)
+        clgCapFuncTempCurve.setCoefficient6xTIMESY(-0.0000369198)
+        clgCapFuncTempCurve.setMinimumValueofx(4.44)
+        clgCapFuncTempCurve.setMaximumValueofx(12.78)
+        clgCapFuncTempCurve.setMinimumValueofy(12.78)
+        clgCapFuncTempCurve.setMaximumValueofy(29.44)
+        clgCapFuncTempCurve.setInputUnitTypeforX('Temperature')
+        clgCapFuncTempCurve.setInputUnitTypeforY('Temperature')
+        clgCapFuncTempCurve.setOutputUnitType('Dimensionless')
+        
+        # create eirFuncTempCurve
+        eirFuncTempCurve = ops.CurveBiquadratic(model)
+        eirFuncTempCurve.setName('ChillerHeaterClgEIRFT' +str(HVACCount))
+        eirFuncTempCurve.setCoefficient1Constant(0.7362431)
+        eirFuncTempCurve.setCoefficient2x(0.02136491)
+        eirFuncTempCurve.setCoefficient3xPOW2(0.0003638909)
+        eirFuncTempCurve.setCoefficient4y(-0.004284947)
+        eirFuncTempCurve.setCoefficient5yPOW2(0.0003389817)
+        eirFuncTempCurve.setCoefficient6xTIMESY(-0.0003632396)
+        eirFuncTempCurve.setMinimumValueofx(4.44)
+        eirFuncTempCurve.setMaximumValueofx(12.78)
+        eirFuncTempCurve.setMinimumValueofy(12.78)
+        eirFuncTempCurve.setMaximumValueofy(29.44)
+        eirFuncTempCurve.setInputUnitTypeforX('Temperature')
+        eirFuncTempCurve.setInputUnitTypeforY('Temperature')
+        eirFuncTempCurve.setOutputUnitType('Dimensionless')
+        
+        # create eirFuncPlrCurve
+        eirFuncPlrCurve = ops.CurveBicubic(model)
+        eirFuncPlrCurve.setName('ChillerHeaterClgEIRFPLR' +str(HVACCount))
+        eirFuncPlrCurve.setCoefficient1Constant(0)
+        eirFuncPlrCurve.setCoefficient2x(1.22895)
+        eirFuncPlrCurve.setCoefficient3xPOW2(-0.751383)
+        eirFuncPlrCurve.setCoefficient7xPOW3(0.517396)
+        eirFuncPlrCurve.setMinimumValueofx(0.2)
+        eirFuncPlrCurve.setMaximumValueofx(1)
+        
+        # heating
+        # create htgCapFuncTempCurve
+        htgCapFuncTempCurve = ops.CurveBiquadratic(model)
+        htgCapFuncTempCurve.setName('ChillerHeaterHtgCapFT' +str(HVACCount))
+        htgCapFuncTempCurve.setCoefficient1Constant(0.9415266)
+        htgCapFuncTempCurve.setCoefficient2x(0.05527431)
+        htgCapFuncTempCurve.setCoefficient3xPOW2(0.0003573558)
+        htgCapFuncTempCurve.setCoefficient4y(0.001258391)
+        htgCapFuncTempCurve.setCoefficient5yPOW2(-0.00006420546)
+        htgCapFuncTempCurve.setCoefficient6xTIMESY(-0.0005350989)
+        htgCapFuncTempCurve.setMinimumValueofx(4.44)
+        htgCapFuncTempCurve.setMaximumValueofx(15.56)
+        htgCapFuncTempCurve.setMinimumValueofy(35)
+        htgCapFuncTempCurve.setMaximumValueofy(57.22)
+        htgCapFuncTempCurve.setInputUnitTypeforX('Temperature')
+        htgCapFuncTempCurve.setInputUnitTypeforY('Temperature')
+        htgCapFuncTempCurve.setOutputUnitType('Dimensionless')
+        
+        # create eirFuncTempCurve
+        chillerHeaterHtgEIRFT = ops.CurveBiquadratic(model)
+        chillerHeaterHtgEIRFT.setName('ChillerHeaterHtgEIRFT' +str(HVACCount))
+        chillerHeaterHtgEIRFT.setCoefficient1Constant(0.2286246)
+        chillerHeaterHtgEIRFT.setCoefficient2x(0.02498714)
+        chillerHeaterHtgEIRFT.setCoefficient3xPOW2(-0.00001267106)
+        chillerHeaterHtgEIRFT.setCoefficient4y(0.009327184)
+        chillerHeaterHtgEIRFT.setCoefficient5yPOW2(0.00005892037)
+        chillerHeaterHtgEIRFT.setCoefficient6xTIMESY(-0.0003268512)
+        chillerHeaterHtgEIRFT.setMinimumValueofx(4.44)
+        chillerHeaterHtgEIRFT.setMaximumValueofx(15.56)
+        chillerHeaterHtgEIRFT.setMinimumValueofy(35)
+        chillerHeaterHtgEIRFT.setMaximumValueofy(57.22)
+        chillerHeaterHtgEIRFT.setInputUnitTypeforX('Temperature')
+        chillerHeaterHtgEIRFT.setInputUnitTypeforY('Temperature')
+        chillerHeaterHtgEIRFT.setOutputUnitType('Dimensionless')
+        
+        # create eirFuncPlrCurve
+        chillerHeaterHtgEIRFPLR = ops.CurveBicubic(model)
+        chillerHeaterHtgEIRFPLR.setName('ChillerHeaterHtgEIRFPLR' +str(HVACCount))
+        chillerHeaterHtgEIRFPLR.setCoefficient1Constant(0)
+        chillerHeaterHtgEIRFPLR.setCoefficient2x(1.12853)
+        chillerHeaterHtgEIRFPLR.setCoefficient3xPOW2(-0.0264962)
+        chillerHeaterHtgEIRFPLR.setCoefficient7xPOW3(-0.103811)
+        chillerHeaterHtgEIRFPLR.setMinimumValueofx(0.3)
+        chillerHeaterHtgEIRFPLR.setMaximumValueofx(1)
+        
+        # performance of entire heat pump system.
+        chiller1 = ops.ChillerHeaterPerformanceElectricEIR(model, clgCapFuncTempCurve, eirFuncTempCurve, 
+            eirFuncPlrCurve, htgCapFuncTempCurve, chillerHeaterHtgEIRFT, chillerHeaterHtgEIRFPLR)
+        
+        # For now I need to ard size the system to get it to run correctly.
+        # This a bug in EnergyPlus.
+        # See here for more information:
+        # https://github.com/NREL/EnergyPlus/issues/6445
+        if coolingDetails != None and coolingDetails.coolHardSize != 'Autosize':
+            chiller1.setReferenceCoolingModeEvaporatorCapacity(float(coolingDetails.coolHardSize))
+        
+        # set the properties of the chiller/heater
+        if coolingDetails != None and coolingDetails.coolingCOP != 'Default':
+            chiller1.setReferenceCoolingModeCOP(coolingDetails.coolingCOP)
+        else:
+            chiller1.setReferenceCoolingModeCOP(5.5)
+        if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
+            chiller1.setReferenceLeavingChilledWaterTemperature(coolingDetails.supplyTemperature)
+        chiller1.setCondenserType("WaterCooled")
+        chiller1.setChilledWaterFlowModeType("VariableFlow")
+        
+        # create the two modules
+        centralPumpModule1 = ops.CentralHeatPumpSystemModule(model)
+        centralPumpModule1.setChillerHeaterModulesPerformanceComponent(chiller1)
+        
+        # construct the system
+        centralPumpSystem = ops.CentralHeatPumpSystem(model)
+        centralPumpSystem.addModule(centralPumpModule1)
+        
+        return centralPumpSystem
+    
     def createDefaultAEDGWaterChiller(self, model, coolingDetails):
         # create clgCapFuncTempCurve
         clgCapFuncTempCurve = ops.CurveBiquadratic(model)
@@ -912,8 +1066,11 @@ class WriteOPS(object):
             chiller.setReferenceCOP(5.5)
         if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
             chiller.setReferenceLeavingChilledWaterTemperature(coolingDetails.supplyTemperature)
+        if coolingDetails != None and coolingDetails.coolHardSize != 'Autosize':
+            chiller.setReferenceCapacity(float(coolingDetails.coolHardSize))
         chiller.setCondenserType("WaterCooled")
         chiller.setChillerFlowMode("ConstantFlow")
+        
         return chiller
     
     def createDefaultAEDGAirChiller(self, model, coolingDetails):
@@ -956,6 +1113,8 @@ class WriteOPS(object):
             chiller.setReferenceCOP(2.93)
         if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
             chiller.setReferenceLeavingChilledWaterTemperature(coolingDetails.supplyTemperature)
+        if coolingDetails != None and coolingDetails.coolHardSize != 'Autosize':
+            chiller.setReferenceCapacity(float(coolingDetails.coolHardSize))
         chiller.setCondenserType("AirCooled")
         chiller.setChillerFlowMode("ConstantFlow")
         return chiller
@@ -978,12 +1137,30 @@ class WriteOPS(object):
         else:
             pEfficiency = 0.9
         pump = self.createDefaultAEDGPump(model, pEfficiency)
+        
         # create a boiler
         boiler = ops.BoilerHotWater(model)
         if heatingDetails != None and heatingDetails.heatingEffOrCOP != 'Default':
             boiler.setNominalThermalEfficiency(heatingDetails.heatingEffOrCOP)
         else:
             boiler.setNominalThermalEfficiency(0.9)
+        if heatingDetails != None and heatingDetails.heatHardSize != 'Autosize':
+            boiler.setNominalCapacity(float(heatingDetails.heatHardSize))
+        # boiler efficiency curve
+        boilerEfficiency = ops.CurveBiquadratic(model)
+        boilerEfficiency.setName("Boiler Efficiency" + str(HVACCount))
+        boilerEfficiency.setCoefficient1Constant(1)
+        boilerEfficiency.setCoefficient2x(0)
+        boilerEfficiency.setCoefficient3xPOW2(0)
+        boilerEfficiency.setCoefficient4y(0)
+        boilerEfficiency.setCoefficient5yPOW2(0)
+        boilerEfficiency.setCoefficient6xTIMESY(0)
+        boilerEfficiency.setMinimumValueofx(0)
+        boilerEfficiency.setMaximumValueofx(1)
+        boilerEfficiency.setMinimumValueofy(0)
+        boilerEfficiency.setMaximumValueofy(1)
+        boiler.setNormalizedBoilerEfficiencyCurve(boilerEfficiency)
+        boiler.setEfficiencyCurveTemperatureEvaluationVariable('LeavingBoiler')
         
         # create a scheduled setpoint manager
         setpointManagerScheduled = ops.SetpointManagerScheduled(model,hotWaterSetpointSchedule)
@@ -1031,6 +1208,9 @@ class WriteOPS(object):
             chiller = self.createDefaultAEDGWaterChiller(model, coolingDetails)
         elif chillerType == "AirCooled":
             chiller = self.createDefaultAEDGAirChiller(model, coolingDetails)
+        elif chillerType == "GroundSourced":
+            chiller = self.createDefaultGroundSourceChiller(model, coolingDetails, HVACCount)
+        
         # create a scheduled setpoint manager
         setpointManagerScheduled = ops.SetpointManagerScheduled(model, chilledWaterSetpointSchedule)
         # create pipes
@@ -1202,7 +1382,49 @@ class WriteOPS(object):
         districtHeating.addToNode(districtCooling.outletModelObject().get().to_Node().get())
         setpointManagerScheduledHeating.addToNode(districtHeating.outletModelObject().get().to_Node().get())
         
+        # demand side components
+        if chillerWaterPlant != None:
+            chillervec = chillerWaterPlant.supplyComponents(ops.IddObjectType("OS:CentralHeatPumpSystem"))
+            chiller = model.getCentralHeatPumpSystem(chillervec[0].handle()).get()
+            condenserLoop.addDemandBranchForComponent(chiller)
+            condenserLoop.addDemandBranchForComponent(pipeDemandBypass)
+            pipeDemandInlet.addToNode(condenserLoop.demandInletNode())
+            pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
+            chiller.setName('Central Heat Pump System ' + str(HVACCount))
+        
         return condenserLoop
+    
+    def replaceChillerWithHeatPump(self, model, centHeatPump, cwl, HVACCount):
+        # replace the chiller.
+        chillerVec = cwl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
+        for chiller in chillerVec:
+            osChiller = model.getChillerElectricEIR(chiller.handle()).get()
+            condenserLoop = osChiller.secondaryPlantLoop().get()
+            condenserLoop.remove()
+            osChiller.remove()
+        cwl.addSupplyBranchForComponent(centHeatPump)
+    
+    def replaceBoilerWithHeatPump(self, model, hotWaterPlant, chillerWaterPlant, HVACCount):
+        # replace the boiler.
+        boilerVec = hotWaterPlant.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
+        for boiler in boilerVec:
+            osBoiler = model.getBoilerHotWater(boiler.handle()).get()
+            osBoiler.remove()
+        
+        # get the chiller/heat pump
+        chillervec = chillerWaterPlant.supplyComponents(ops.IddObjectType("OS:CentralHeatPumpSystem"))
+        chiller = model.getCentralHeatPumpSystem(chillervec[0].handle()).get()
+        hotWaterPlant.addSupplyBranchForComponent(chiller)
+    
+    def replaceWaterChillWithAirChill(self, model, airChiller, cwl, HVACCount):
+        # replace the chiller.
+        chillerVec = cwl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
+        for chiller in chillerVec:
+            osChiller = model.getChillerElectricEIR(chiller.handle()).get()
+            condenserLoop = osChiller.secondaryPlantLoop().get()
+            condenserLoop.remove()
+            osChiller.remove()
+        cwl.addSupplyBranchForComponent(airChiller)
     
     def setDemandVent(self, model, airloop):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
@@ -1242,6 +1464,8 @@ class WriteOPS(object):
             sizingSystem.setTypeofLoadtoSizeOn("Sensible") #VAV
             sizingSystem.setAllOutdoorAirinCooling(False) #VAV
             sizingSystem.setAllOutdoorAirinHeating(False) #VAV
+            if airDetails.recirculation == 'False':
+                self.setAirLoopToOnceThroughAir(airloopPrimary, model)
         
         airLoopComps = []
         # set availability schedule
@@ -1380,12 +1604,10 @@ class WriteOPS(object):
             self.adjustAirSideEcon(airloopPrimary, airDetails)
         
         # add erv to outdoor air system either based on user input or add the default AEDG erv.
-        if airDetails != None and airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-            self.addHeatRecovToModel(model, airloopPrimary, airDetails.heatRecovery, airDetails.recoveryEffectiveness, False, True)
-        elif airDetails != None and airDetails.heatRecovery != 'Default' and airDetails.heatRecovery == 'None':
-            pass
+        if airDetails != None and (airDetails.sensibleHeatRecovery != 'Default' or airDetails.latentHeatRecovery != 'Default'):
+            self.addHeatRecovToModel(model, airloopPrimary, airDetails.sensibleHeatRecovery, airDetails.latentHeatRecovery, False, True)
         elif heatRecovOverride == False:
-            self.addHeatRecovToModel(model, airloopPrimary, 'Enthalpy', 0.75, False, True, 0.69)
+            self.addHeatRecovToModel(model, airloopPrimary, 'Default', 'Default', False, True, 0.69)
         
         # add setpoint manager to supply equipment outlet node
         setpointManager.addToNode(airloopPrimary.supplyOutletNode())
@@ -1571,10 +1793,8 @@ class WriteOPS(object):
         if heatingDetails != None and heatingDetails.heatingEffOrCOP != 'Default':
             vrfAirConditioner.setRatedHeatingCOP(heatingDetails.heatingEffOrCOP)
         
-        if airDetails != None and airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-            vrfAirConditioner.setHeatPumpWasteHeatRecovery(True)
-        else:
-            vrfAirConditioner.setHeatPumpWasteHeatRecovery(False)
+        # set the heat pump to recover wast heat by default
+        vrfAirConditioner.setHeatPumpWasteHeatRecovery(True)
         
         vrfAirConditioner.setAvailabilitySchedule(model.alwaysOnDiscreteSchedule())
         if heatingDetails != None and heatingDetails.heatingAvailSched != "ALWAYS ON":
@@ -1584,11 +1804,11 @@ class WriteOPS(object):
             coolAvailSch = self.getOSSchedule(coolingDetails.coolinggAvailSched, model)
             vrfAirConditioner.setAvailabilitySchedule(coolAvailSch)
         
-        if coolingDetails != None and coolingDetails.chillerType == "WaterCooled" and condenserLoop == None:
+        if coolingDetails != None and (coolingDetails.chillerType == "WaterCooled" or coolingDetails.chillerType == "GroundSourced") and condenserLoop == None:
             cndwl = self.createCondenser(model, None, "VRF - " + str(HVACCount))
         
         # For water source VRFs.
-        if (coolingDetails != None and coolingDetails.chillerType == "WaterCooled" and condenserLoop == None) or (condenserLoop != None):
+        if (coolingDetails != None and (coolingDetails.chillerType == "WaterCooled" or coolingDetails.chillerType == "GroundSourced") and condenserLoop == None) or (condenserLoop != None):
             # The following should connect the VRF to a plant loop.
             # However, OpenStudio does not currently support this and these inputs end up doing nothing.
             vrfAirConditioner.setString(56,"WaterCooled")
@@ -1624,8 +1844,11 @@ class WriteOPS(object):
     
     
     def createZoneEquip(self, model, thermalZones, hbZones, equipList, hotWaterPlant=None, chilledWaterPlant=None, heatPumpLoop=None, heatOnly=False):
+        # create radiant constructions.
         radiantFloor = None
-        if 'RadiantFloor' in equipList or 'RadiantCeiling' in equipList:
+        radConstructions = {}
+        customRadFound = False
+        if 'RadiantFloor' in equipList:
             # create radiant construction and substitute for existing surface (interior or exterior) constructions
             # ignore layer below insulation, which will depend on boundary condition
             insul = ops.StandardOpaqueMaterial(model,"Rough",0.0254,0.02,56.06,1210) # rigid_insulation_1in
@@ -1639,7 +1862,6 @@ class WriteOPS(object):
             radiantFloor = ops.ConstructionWithInternalSource(model)
             radiantFloor.setName('4in Radiant Slab Construction')
             radiantFloor.setLayers(materials)
-            radiantFloor.setSourcePresentAfterLayerNumber(2)
             radiantFloor.setSourcePresentAfterLayerNumber(2)
         
         for zoneCount, zone in enumerate(thermalZones):
@@ -1671,7 +1893,7 @@ class WriteOPS(object):
                 baseboardHeater = ops.ZoneHVACBaseboardConvectiveWater(model, model.alwaysOnDiscreteSchedule(), baseboardCoil)
                 baseboardHeater.addToThermalZone(zone)          
                 hotWaterPlant.addDemandBranchForComponent(baseboardCoil)
-            if 'RadiantFloor' in equipList or 'RadiantCeiling' in equipList:
+            if 'RadiantFloor' in equipList or 'CustomRadiant' in equipList:
                 # create hot water coil and attach to radiant hot water loop
                 heatingCoil = ops.CoilHeatingLowTempRadiantVarFlow(model, model.alwaysOnDiscreteSchedule())
                 heatSetPtSch = self.getOSSchedule(hbZones[zoneCount].heatingSetPtSchedule, model)
@@ -1688,13 +1910,11 @@ class WriteOPS(object):
                 lowTempRadiant = ops.ZoneHVACLowTempRadiantVarFlow(model, model.alwaysOnDiscreteSchedule(), heatingCoil, coolingCoil)
                 if 'RadiantFloor' in equipList:
                     lowTempRadiant.setRadiantSurfaceType("Floors")
-                else:
-                    lowTempRadiant.setRadiantSurfaceType("Ceilings")
                 lowTempRadiant.setHydronicTubingInsideDiameter(0.012)
                 lowTempRadiant.setTemperatureControlType("MeanRadiantTemperature")
                 lowTempRadiant.addToThermalZone(zone)
                 
-                # assign radiant construction to zone floor
+                # assign radiant construction to zone surfaces
                 space = zone.spaces()[0]
                 if 'RadiantFloor' in equipList:
                     for surface in space.surfaces:
@@ -1702,8 +1922,39 @@ class WriteOPS(object):
                             surface.setConstruction(radiantFloor)
                 else:
                     for surface in space.surfaces:
-                        if surface.surfaceType() == "Ceiling" or surface.surfaceType() == "RoofCeiling":
-                            surface.setConstruction(radiantFloor)
+                        srfConstruction = surface.construction().get()
+                        constrName = str(srfConstruction.name())
+                        materialNames, comments, UVSI, UVIP = self.hb_EPMaterialAUX.decomposeEPCnstr(constrName)
+                        if 'INTERNAL SOURCE' in str(materialNames).upper():
+                            customRadFound = True
+                            try:
+                                surface.setConstruction(radConstructions[constrName])
+                            except:
+                                # create an empty vector to collect the materials
+                                layers = []
+                                sourceLoc = 1
+                                for count, materialName in enumerate(materialNames):
+                                    # check if the material has been already produced
+                                    if materialName.upper() == 'INTERNAL SOURCE':
+                                        sourceLoc = count
+                                    elif not self.isMaterialInLib(materialName):
+                                        # create an openstudio material for EP material
+                                        OSMaterial = self.getOSMaterial(materialName, model)
+                                        layers.append(OSMaterial)
+                                        self.addMaterialToLib(materialName, OSMaterial)
+                                    else:
+                                        # material has been already created so let's just use it
+                                        layers.append(self.getMaterialFromLib(materialName))
+                                
+                                materials = ops.MaterialVector()
+                                for OSMaterial in layers:
+                                    materials.Add(OSMaterial)
+                                radiantSrf = ops.ConstructionWithInternalSource(model)
+                                radiantSrf.setName(constrName)
+                                radiantSrf.setLayers(materials)
+                                radiantSrf.setSourcePresentAfterLayerNumber(sourceLoc)
+                                surface.setConstruction(radiantSrf)
+                                radConstructions[constrName] = radiantSrf
             if 'WSHP' in equipList:
                 # create water source heat pump and attach to heat pump loop
                 # create fan
@@ -1757,6 +2008,11 @@ class WriteOPS(object):
                 heatPump.setOutdoorAirFlowRateWhenNoCoolingorHeatingisNeeded(ops.OptionalDouble(0))
                 # add heat pump to thermal zone
                 heatPump.addToThermalZone(zone)
+        
+        if 'CustomRadiant' in equipList and customRadFound == False:
+            warning = 'Custom Radiant HVAC selected \n but no surfaces with Internal Source constructions were found.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
     ### END OF FUNCTIONS FOR CREATING HVAC SYSTEMS FROM SCRATCH ###
     
@@ -1775,17 +2031,21 @@ class WriteOPS(object):
         if pumpMotorEfficiency != 'Default':
             pump.setMotorEfficiency(pumpMotorEfficiency)
     
-    def updateChiller(self, model, osChiller, coolingCOP, supplyTemperature):
+    def updateChiller(self, model, osChiller, coolingCOP, supplyTemperature, coolHardSize):
         if coolingCOP != 'Default':
             osChiller.setReferenceCOP(coolingCOP)
         if supplyTemperature != 'Default':
             osChiller.setReferenceLeavingChilledWaterTemperature(supplyTemperature)
+        if coolHardSize != 'Autosize':
+            osChiller.setReferenceCapacity(coolHardSize)
    
-    def updateBoiler(self, model, osboiler, heatingEffOrCOP, supplyTemperature):
+    def updateBoiler(self, model, osboiler, heatingEffOrCOP, supplyTemperature, heatHardSize):
         if heatingEffOrCOP != 'Default':
             osboiler.setNominalThermalEfficiency(heatingEffOrCOP)
         if supplyTemperature != 'Default':
             osboiler.setDesignWaterOutletTemperature(supplyTemperature)
+        if heatHardSize != 'Autosize':
+            boiler.setNominalCapacity(float(heatingDetails.heatHardSize))
     
     def updateDXCoolingCoil(self, model, coolCoil, coolingAvailSched, coolingCOP):
         if coolingAvailSched != 'ALWAYS ON':
@@ -1922,41 +2182,50 @@ class WriteOPS(object):
         humidifier.addToNode(supplyNode)
         self.addHumidifierController(model, airloop)
     
-    def addHeatRecovToModel(self, model, airloop, heatRecovery, recoveryEffectiveness, econLockout=False, aedgRecov=False, latentEff=None):
-        # Create an air-to-air heat exchanger.
-        heatEx = ops.HeatExchangerAirToAirSensibleAndLatent(model)
-        #Set how the economizer interacts with the heat recovery.
-        heatEx.setEconomizerLockout(econLockout)
-        # Change the properties of the heat exchanger based on the inputs.
-        if heatRecovery == 'Sensible':
-            heatEx.setLatentEffectivenessat100CoolingAirFlow(0)
-            heatEx.setLatentEffectivenessat100HeatingAirFlow(0)
-            heatEx.setLatentEffectivenessat75CoolingAirFlow(0)
-            heatEx.setLatentEffectivenessat75HeatingAirFlow(0)
-        if recoveryEffectiveness != 'Default':
-            heatEx.setSensibleEffectivenessat100CoolingAirFlow(recoveryEffectiveness)
-            heatEx.setSensibleEffectivenessat100HeatingAirFlow(recoveryEffectiveness)
-            heatEx.setSensibleEffectivenessat75CoolingAirFlow(recoveryEffectiveness)
-            heatEx.setSensibleEffectivenessat75HeatingAirFlow(recoveryEffectiveness)
-            if heatRecovery != 'Sensible':
-                if latentEff == None:
-                    heatEx.setLatentEffectivenessat100CoolingAirFlow(recoveryEffectiveness)
-                    heatEx.setLatentEffectivenessat100HeatingAirFlow(recoveryEffectiveness)
-                    heatEx.setLatentEffectivenessat75CoolingAirFlow(recoveryEffectiveness)
-                    heatEx.setLatentEffectivenessat75HeatingAirFlow(recoveryEffectiveness)
-                else:
-                    heatEx.setLatentEffectivenessat100CoolingAirFlow(latentEff)
-                    heatEx.setLatentEffectivenessat100HeatingAirFlow(latentEff)
-                    heatEx.setLatentEffectivenessat75CoolingAirFlow(latentEff)
-                    heatEx.setLatentEffectivenessat75HeatingAirFlow(latentEff)
-        if aedgRecov == True:
-            heatEx.setFrostControlType("ExhaustOnly")
-            heatEx.setThresholdTemperature(-12.2)
-            heatEx.setInitialDefrostTimeFraction(0.1670)
-            heatEx.setRateofDefrostTimeFractionIncrease(0.0240)
-        # Add the heat exchanger to the model.
-        outdoorNode = airloop.reliefAirNode().get()
-        heatEx.addToNode(outdoorNode)
+    def addHeatRecovToModel(self, model, airloop, sensibleHeatRecovery, latentHeatRecovery, econLockout=False, aedgRecov=False, latentEff=None):
+        if not (sensibleHeatRecovery == 0 and latentHeatRecovery == 0):
+            # Create an air-to-air heat exchanger.
+            heatEx = ops.HeatExchangerAirToAirSensibleAndLatent(model)
+            #Set how the economizer interacts with the heat recovery.
+            heatEx.setEconomizerLockout(econLockout)
+            # Change the properties of the heat exchanger based on the inputs.
+            if latentHeatRecovery == 'Default':
+                heatEx.setLatentEffectivenessat100CoolingAirFlow(0.68)
+                heatEx.setLatentEffectivenessat100HeatingAirFlow(0.68)
+                heatEx.setLatentEffectivenessat75CoolingAirFlow(0.73)
+                heatEx.setLatentEffectivenessat75HeatingAirFlow(0.73)
+            if sensibleHeatRecovery == 'Default':
+                heatEx.setSensibleEffectivenessat100CoolingAirFlow(0.76)
+                heatEx.setSensibleEffectivenessat100HeatingAirFlow(0.76)
+                heatEx.setSensibleEffectivenessat75CoolingAirFlow(0.81)
+                heatEx.setSensibleEffectivenessat75HeatingAirFlow(0.81)
+            if latentHeatRecovery != 'Default':
+                effAtMax = latentHeatRecovery*(0.68/0.73)
+                heatEx.setLatentEffectivenessat100CoolingAirFlow(effAtMax)
+                heatEx.setLatentEffectivenessat100HeatingAirFlow(effAtMax)
+                heatEx.setLatentEffectivenessat75CoolingAirFlow(latentHeatRecovery)
+                heatEx.setLatentEffectivenessat75HeatingAirFlow(latentHeatRecovery)
+            if sensibleHeatRecovery != 'Default':
+                effAtMax = sensibleHeatRecovery*(0.76/0.81)
+                heatEx.setSensibleEffectivenessat100CoolingAirFlow(effAtMax)
+                heatEx.setSensibleEffectivenessat100HeatingAirFlow(effAtMax)
+                heatEx.setSensibleEffectivenessat75CoolingAirFlow(sensibleHeatRecovery)
+                heatEx.setSensibleEffectivenessat75HeatingAirFlow(sensibleHeatRecovery)
+            
+            if aedgRecov == True:
+                heatEx.setFrostControlType("ExhaustOnly")
+                heatEx.setThresholdTemperature(-12.2)
+                heatEx.setInitialDefrostTimeFraction(0.1670)
+                heatEx.setRateofDefrostTimeFractionIncrease(0.0240)
+            # Add the heat exchanger to the model.
+            outdoorNode = airloop.reliefAirNode().get()
+            heatEx.addToNode(outdoorNode)
+    
+    def setAirLoopToOnceThroughAir(self, airloop, model):
+        oasys = airloop.airLoopHVACOutdoorAirSystem()
+        oactrl = oasys.get().getControllerOutdoorAir()
+        onceTrhoughSched = self.createConstantScheduleRuleset('OnceThroughAir', 'OnceThroughAirSched', 'FRACTION', 1, model)
+        oactrl.setMinimumFractionofOutdoorAirSchedule(onceTrhoughSched)
     
     def addDefaultAirsideEcon(self, airloop, dehumidTrigger):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
@@ -1998,14 +2267,19 @@ class WriteOPS(object):
                 cvfan.addToNode(mixAirNode)
         if airDetails.heatingSupplyAirTemp != 'Default' or airDetails.coolingSupplyAirTemp != 'Default':
             self.updateCVLoopSupplyTemp(airloop, model, airDetails.coolingSupplyAirTemp, airDetails.heatingSupplyAirTemp)
+        if airDetails.recirculation == 'False':
+            self.setAirLoopToOnceThroughAir(airloop, model)
         if airDetails.airsideEconomizer != 'Default':
             if airDetails.airsideEconomizer == 'NoEconomizer':
                 econLockout = True
             self.adjustAirSideEcon(airloop, airDetails)
         else:
             self.addDefaultAirsideEcon(airloop, False)
-        if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness, econLockout)
+        if airDetails.sensibleHeatRecovery != 'Default' or airDetails.latentHeatRecovery != 'Default':
+            self.addHeatRecovToModel(model, airloop, airDetails.sensibleHeatRecovery, airDetails.latentHeatRecovery, econLockout)
+        if airDetails.fanControl == 'Variable Volume':
+            self.swapCVFanForVV(model, airloop, airDetails)
+            self.setDemandVent(model, airloop)
     
     def adjustVAVAirLoop(self, model, airloop, airDetails, HVACCount, dehumidTrigger, waterCoolCoil=False, fanAdjustable=True):
         econLockout = False
@@ -2018,14 +2292,16 @@ class WriteOPS(object):
             self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise,airDetails.airSysHardSize)
         if airDetails.airSysHardSize != "Default":
             airloop.setDesignSupplyAirFlowRate(float(airDetails.airSysHardSize))
+        if airDetails.recirculation == 'False':
+            self.setAirLoopToOnceThroughAir(airloop, model)
         if airDetails.airsideEconomizer != 'Default':
             self.adjustAirSideEcon(airloop, airDetails)
             if airDetails.airsideEconomizer == 'NoEconomizer':
                 econLockout = True
         else:
             self.addDefaultAirsideEcon(airloop, dehumidTrigger)
-        if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness, econLockout)
+        if airDetails.sensibleHeatRecovery != 'Default' or airDetails.latentHeatRecovery != 'Default':
+            self.addHeatRecovToModel(model, airloop, airDetails.sensibleHeatRecovery, airDetails.latentHeatRecovery, econLockout)
         if airDetails.fanPlacement != 'Default' and fanAdjustable == True:
             if airDetails.fanPlacement == 'Blow Through':
                 x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
@@ -2063,7 +2339,7 @@ class WriteOPS(object):
                 boilerVec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
                 for boiler in boilerVec:
                     osBoiler = model.getBoilerHotWater(boiler.handle()).get()
-                    self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature)
+                    self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature, heatingDetails.heatHardSize)
             if heatingDetails.pumpMotorEfficiency != "Default":
                 pumpVec = hwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
                 for pump in enumerate(pumpVec):
@@ -2079,11 +2355,11 @@ class WriteOPS(object):
             x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
             cc = model.getCoilCoolingWater(x[0].handle()).get()
             cwl = cc.plantLoop().get()
-            if coolingDetails.coolingCOP != "Default" or coolingDetails.supplyTemperature != "Default":
+            if coolingDetails.coolingCOP != "Default" or coolingDetails.supplyTemperature != "Default" or coolingDetails.coolHardSize != "Autosize":
                 chillervec = cwl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
                 for chiller in chillervec:
                     osChiller = model.getChillerElectricEIR(chiller.handle()).get()
-                    self.updateChiller(model, osChiller, coolingDetails.coolingCOP, coolingDetails.supplyTemperature)
+                    self.updateChiller(model, osChiller, coolingDetails.coolingCOP, coolingDetails.supplyTemperature, coolingDetails.coolHardSize)
             if coolingDetails.pumpMotorEfficiency != "Default":
                 pumpVec = cwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
                 for pump in enumerate(pumpVec):
@@ -2137,6 +2413,23 @@ class WriteOPS(object):
             humidTrigger = False
             HVACCount +=1
             
+            # Check that the version of OpenStudio is correct for ground source hydronic systems.
+            if coolingDetails != None:
+                if coolingDetails.chillerType == 'GroundSourced':
+                    try:
+                        vernum1 = int(osVersion.split('.')[0])
+                        vernum2 = int(osVersion.split('.')[1])
+                    except:
+                        vernum1 = 1
+                        vernum2 = 0
+                    if vernum1 > 2:
+                        pass
+                    elif vernum1 == 2 and vernum2 >=4:
+                        pass
+                    else:
+                        msg = 'You must have OpenStudio 2.5 or greater to use ground sourced systems.'
+                        raise Exception(msg)
+            
             # add systems. There are 10 standard ASHRAE systems + Ideal Air Loads
             if systemIndex == -1:
                 # -1: Thermostat Only (no system)
@@ -2184,11 +2477,20 @@ class WriteOPS(object):
                             zoneIdealAir.setMinimumCoolingSupplyAirTemperature(airDetails.coolingSupplyAirTemp)
                         if airDetails.airsideEconomizer != 'Default':
                             zoneIdealAir.setOutdoorAirEconomizerType(airDetails.airsideEconomizer)
-                        if airDetails.heatRecovery != 'Default':
-                            zoneIdealAir.setHeatRecoveryType(airDetails.heatRecovery)
-                        if airDetails.recoveryEffectiveness != 'Default':
-                            zoneIdealAir.setSensibleHeatRecoveryEffectiveness(airDetails.recoveryEffectiveness)
-                            zoneIdealAir.setLatentHeatRecoveryEffectiveness(airDetails.recoveryEffectiveness)
+                            if airDetails.airsideEconomizer == 'NoEconomizer':
+                                zoneIdealAir.setCoolingLimit('NoLimit')
+                        if airDetails.airSysHardSize != "Default":
+                            zoneIdealAir.setCoolingLimit('LimitFlowRate')
+                            zoneIdealAir.setMaximumCoolingAirFlowRate(float(airDetails.airSysHardSize))
+                        if airDetails.sensibleHeatRecovery != 'Default' and airDetails.sensibleHeatRecovery != 0:
+                            zoneIdealAir.setHeatRecoveryType('Sensible')
+                            zoneIdealAir.setSensibleHeatRecoveryEffectiveness(airDetails.sensibleHeatRecovery)
+                            zoneIdealAir.setLatentHeatRecoveryEffectiveness(0)
+                        if airDetails.latentHeatRecovery != 'Default' and airDetails.latentHeatRecovery != 0:
+                            zoneIdealAir.setHeatRecoveryType('Enthalpy')
+                            zoneIdealAir.setLatentHeatRecoveryEffectiveness(airDetails.latentHeatRecovery)
+                            if airDetails.sensibleHeatRecovery == 'Default':
+                                zoneIdealAir.setSensibleHeatRecoveryEffectiveness(0.8)
                     
                     # Set the heatingDetails.
                     if heatingDetails != None:
@@ -2256,11 +2558,11 @@ class WriteOPS(object):
                         x = ptac.heatingCoil().name()
                         hc = model.getCoilHeatingWaterByName(str(x)).get()
                         hwl = hc.plantLoop().get()
-                        if heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default":
+                        if heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default" or heatingDetails.heatHardSize != "Autosize":
                             boilerVec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
                             for boiler in boilerVec:
                                 osBoiler = model.getBoilerHotWater(boiler.handle()).get()
-                                self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature)
+                                self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature, heatingDetails.heatHardSize)
                         if heatingDetails.pumpMotorEfficiency != "Default":
                             pumpVec = hwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
                             for pump in enumerate(pumpVec):
@@ -2316,67 +2618,70 @@ class WriteOPS(object):
                 
             elif systemIndex == 3:
                 # 3: Packaged Single Zone - AC
+                hvacHandle = ops.OpenStudioModelHVAC.addSystemType3(model).handle()
+                airloop = model.getAirLoopHVAC(hvacHandle).get()
+                humidTrigg = False
                 for zoneCount, zone in enumerate(thermalZoneVector):
-                    handle = ops.OpenStudioModelHVAC.addSystemType3(model).handle()
-                    airloop = model.getAirLoopHVAC(handle).get()
                     airloop.addBranchForZone(zone)
-                    
-                    if hbZones[zoneCount].humidityMin != '':
+                    if hbZones[zoneCount].humidityMin != '' and humidTrigg == False:
+                        humidTrigg = True
                         self.addElectricHumidifier(model, airloop)
-                    
-                    #Set the airDetails.
-                    if airDetails != None:
-                        self.adjustCVAirLoop(model, airloop, airDetails)
-                    else:
-                        self.addDefaultAirsideEcon(airloop, False)
-                    
-                    #Set the heatingDetails.
-                    if heatingDetails != None:
-                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
-                            comps = airloop.supplyComponents()
-                            hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Gas"))
-                            hc = model.getCoilHeatingGas(hcs[0].handle()).get()
-                            self.updateGasHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
-                    
-                    #Set the coolingDetails.
-                    if coolingDetails != None:
-                        if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
-                            comps = airloop.supplyComponents()
-                            ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
-                            cc = model.getCoilCoolingDXSingleSpeed(ccs[0].handle()).get()
-                            self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
                 
+                #Set the airDetails.
+                if airDetails != None:
+                    self.adjustCVAirLoop(model, airloop, airDetails)
+                else:
+                    self.addDefaultAirsideEcon(airloop, False)
+                
+                #Set the heatingDetails.
+                if heatingDetails != None:
+                    if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
+                        comps = airloop.supplyComponents()
+                        hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Gas"))
+                        hc = model.getCoilHeatingGas(hcs[0].handle()).get()
+                        self.updateGasHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                
+                #Set the coolingDetails.
+                if coolingDetails != None:
+                    if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
+                        comps = airloop.supplyComponents()
+                        ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
+                        cc = model.getCoilCoolingDXSingleSpeed(ccs[0].handle()).get()
+                        self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
+            
             elif systemIndex == 4:
                 # 4: Packaged Single Zone - HP
+                handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
+                airloop = model.getAirLoopHVAC(handle).get()
+                humidTrigg = False
                 for zoneCount, zone in enumerate(thermalZoneVector):
-                    handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
-                    airloop = model.getAirLoopHVAC(handle).get()
                     airloop.addBranchForZone(zone)
                     
-                    if hbZones[zoneCount].humidityMin != '':
+                    if hbZones[zoneCount].humidityMin != '' and humidTrigg == False:
+                        humidTrigg = True
                         self.addElectricHumidifier(model, airloop)
-                    
-                    #Set the airDetails.
-                    if airDetails != None:
-                        self.adjustCVAirLoop(model, airloop, airDetails)
-                    else:
-                        self.addDefaultAirsideEcon(airloop, False)
-                    
-                    #Set the heatingDetails.
-                    if heatingDetails != None:
-                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
-                            comps = airloop.supplyComponents()
-                            hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:DX:SingleSpeed"))
-                            hc = model.getCoilHeatingDXSingleSpeed(hcs[0].handle()).get()
-                            self.updateDXHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
-                    
-                    #Set the coolingDetails.
-                    if coolingDetails != None:
-                        if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
-                            comps = airloop.supplyComponents()
-                            ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
-                            cc = model.getCoilCoolingDXSingleSpeed(ccs[0].handle()).get()
-                            self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
+                
+                #Set the airDetails.
+                if airDetails != None:
+                    self.adjustCVAirLoop(model, airloop, airDetails)
+                else:
+                    self.addDefaultAirsideEcon(airloop, False)
+                
+                #Set the heatingDetails.
+                if heatingDetails != None:
+                    if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
+                        comps = airloop.supplyComponents()
+                        hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:DX:SingleSpeed"))
+                        hc = model.getCoilHeatingDXSingleSpeed(hcs[0].handle()).get()
+                        self.updateDXHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                
+                #Set the coolingDetails.
+                if coolingDetails != None:
+                    if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
+                        comps = airloop.supplyComponents()
+                        ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
+                        cc = model.getCoilCoolingDXSingleSpeed(ccs[0].handle()).get()
+                        self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
             
             elif systemIndex == 5:
                 # 5: Packaged VAV w/ Reheat
@@ -2524,6 +2829,27 @@ class WriteOPS(object):
                         cwl = cc.plantLoop().get()
                         centralCool = cwl
                 
+                if (coolingDetails != None and coolingDetails.chillerType == "GroundSourced"):
+                    centHeatPump = self.createDefaultGroundSourceChiller(model, coolingDetails, HVACCount)
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                    cc = model.getCoilCoolingWater(x[0].handle()).get()
+                    cwl = cc.plantLoop().get()
+                    self.replaceChillerWithHeatPump(model, centHeatPump, cwl, HVACCount)
+                    cndwl = self.addInfiniteCapacityGroundLoop(model, cwl, HVACCount, coolingDetails)
+                    
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
+                    hc = model.getCoilHeatingWater(x[0].handle()).get()
+                    hwl = hc.plantLoop().get()
+                    # remove boiler and add heat pump.
+                    self.replaceBoilerWithHeatPump(model, hwl, cwl, HVACCount)
+                    self.updateLoopSupplyTemp(hwl, model, 55, "Hot_Water_Temperature_Default", "Hot_Water_Temp", HVACCount)
+                elif (coolingDetails != None and coolingDetails.chillerType == "AirCooled"):
+                    airChill = self.createDefaultAEDGAirChiller(model, coolingDetails, HVACCount)
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                    cc = model.getCoilCoolingWater(x[0].handle()).get()
+                    cwl = cc.plantLoop().get()
+                    self.replaceWaterChillWithAirChill(model, airChill, cwl, HVACCount)
+                
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
                     airloop.addBranchForZone(zone)
@@ -2594,6 +2920,17 @@ class WriteOPS(object):
                         cc = model.getCoilCoolingWater(x[0].handle()).get()
                         cwl = cc.plantLoop().get()
                         centralCool = cwl
+                
+                if (coolingDetails != None and coolingDetails.chillerType == "GroundSourced"):
+                    warning = "VAV w/ PFP Boxes cannot be ground sourced. \n Defaulting to a water cooled chiller."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                elif (coolingDetails != None and coolingDetails.chillerType == "AirCooled"):
+                    airChill = self.createDefaultAEDGAirChiller(model, coolingDetails, HVACCount)
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                    cc = model.getCoilCoolingWater(x[0].handle()).get()
+                    cwl = cc.plantLoop().get()
+                    self.replaceWaterChillWithAirChill(model, airChill, cwl, HVACCount)
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -2720,12 +3057,19 @@ class WriteOPS(object):
                     zoneTotAir = self.getZoneTotalAir(zone)
                     totalAirFlowRates.append(zoneTotAir)
                 
+                if coolingDetails != None and coolingDetails.chillerType != 'Default':
+                    chillType = coolingDetails.chillerType
+                else:
+                    chillType = "WaterCooled"
+                
                 # Create the hot water plant.
                 if heatingDetails != None and heatingDetails.supplyTemperature != 'Default':
                     suppTemp = heatingDetails.supplyTemperature
                 else:
                     if systemIndex == 13 or systemIndex == 14 or systemIndex == 15:
-                        suppTemp = 45
+                        suppTemp = 40
+                    elif chillType == "GroundSourced":
+                        suppTemp = 55
                     else:
                         suppTemp = 67
                 radLoop = False
@@ -2749,10 +3093,7 @@ class WriteOPS(object):
                         suppTemp = 15
                     else:
                         suppTemp = 6.7
-                if coolingDetails != None and coolingDetails.chillerType != 'Default':
-                    chillType = coolingDetails.chillerType
-                else:
-                    chillType = "WaterCooled"
+                
                 if systemIndex == 13 or systemIndex == 14:
                     coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Radiant_Loop_Temperature' + str(HVACCount), 'Chilled_Water_Radiant_Loop_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', suppTemp, model)
                 else:
@@ -2773,7 +3114,16 @@ class WriteOPS(object):
                         cndwl = self.createCondenser(model, cwl, HVACCount)
                     if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool == None:
                         centralConden = cndwl
-                
+                elif chillType == "GroundSourced":
+                    # add a ground loop.
+                    if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool != None:
+                        cndwl = centralConden
+                    else:
+                        cndwl = self.addInfiniteCapacityGroundLoop(model, cwl, HVACCount, coolingDetails)
+                        # remove boiler and add heat pump.
+                        self.replaceBoilerWithHeatPump(model, hwl, cwl, HVACCount)
+                    if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool == None:
+                        centralConden = cndwl
                 
                 # Create air loop.
                 if sum(totalAirFlowRates) > 0:
@@ -2782,15 +3132,19 @@ class WriteOPS(object):
                     elif systemIndex == 12:
                         airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None, "ChilledBeam")
                     elif systemIndex == 13 or systemIndex == 14 or systemIndex == 15:
-                        hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 67, model)
-                        hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
+                        if chillType != "GroundSourced" or systemIndex == 15 or dehumidTrigger == True:
+                            hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 67, model)
+                            hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
                         if systemIndex == 13  or systemIndex == 14:
                             if dehumidTrigger == True:
                                 coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 6.7, model)
                                 coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
                                 airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
                             else:
-                                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl)
+                                if chillType != "GroundSourced":
+                                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl)
+                                else:
+                                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
                         else:
                             airLoop = self.createPrimaryAirLoop('VAV', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, cwl)
                     
@@ -2809,18 +3163,18 @@ class WriteOPS(object):
                     #Add the baseboard heating.
                     equipList = ['Baseboard']
                     self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
-                elif systemIndex == 14:
-                    equipList = ['RadiantCeiling']
-                    self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
-                elif systemIndex == 13 or systemIndex == 15:
-                    #Add the radiant floors.
-                    equipList = ['RadiantFloor']
-                    if systemIndex == 13:
+                elif systemIndex == 14 or systemIndex == 15:
+                    equipList = ['CustomRadiant']
+                    if systemIndex == 14:
                         self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
                     elif systemIndex == 15:
                         self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl, None, True)
+                elif systemIndex == 13:
+                    #Add the radiant floors.
+                    equipList = ['RadiantFloor']
+                    self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
             
-            elif systemIndex == 16 or systemIndex == 17 or systemIndex == 18:
+            elif systemIndex == 16 or systemIndex == 17 :
                 # Check to see if there is humidity control on any of the zones.
                 for zone in hbZones:
                     if zone.humidityMax != '':
@@ -2828,24 +3182,32 @@ class WriteOPS(object):
                     if zone.humidityMin != '':
                         humidTrigger = True
                 
-                if systemIndex == 16:
+                if coolingDetails == None or coolingDetails.chillerType != "GroundSourced":
                     # Make a chilled water loop for the DOAS if it has been specified.
                     cndwl = None
-                    if coolingDetails != None and coolingDetails.chillerType != 'Default':
-                        if coolingDetails.chillerType == "WaterCooled":
-                            if coolingDetails.centralPlant == 'True' and centralConden!= None:
+                    if (coolingDetails != None and coolingDetails.chillerType != 'Default') or (coolingDetails == None and systemIndex == 17):
+                        if (coolingDetails == None and systemIndex == 17) or coolingDetails.chillerType == "WaterCooled":
+                            if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralConden!= None:
                                 cndwl = centralConden
                             else:
-                                condLoopTemp = self.createConstantScheduleRuleset('Condenser_Temperature' + str(HVACCount), 'Condenser_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 30, model)
-                                coolLoopTemp = self.createConstantScheduleRuleset('Condenser_Cooling_Temperature' + str(HVACCount), 'Condenser_Cooling_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 30, model)
-                                heatLoopTemp = self.createConstantScheduleRuleset('Condenser_Heating_Temperature' + str(HVACCount), 'Condenser_Heating_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 20, model)
+                                if coolingDetails != None and coolingDetails.supplyTemperature != "Default":
+                                    condLoopTemp = self.createConstantScheduleRuleset('Condenser_Temperature' + str(HVACCount), 'Condenser_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', float(coolingDetails.supplyTemperature), model)
+                                    coolLoopTemp = self.createConstantScheduleRuleset('Condenser_Cooling_Temperature' + str(HVACCount), 'Condenser_Cooling_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', float(coolingDetails.supplyTemperature), model)
+                                else:
+                                    condLoopTemp = self.createConstantScheduleRuleset('Condenser_Temperature' + str(HVACCount), 'Condenser_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 30, model)
+                                    coolLoopTemp = self.createConstantScheduleRuleset('Condenser_Cooling_Temperature' + str(HVACCount), 'Condenser_Cooling_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 30, model)
+                                if heatingDetails != None and heatingDetails.supplyTemperature != "Default":
+                                    heatLoopTemp = self.createConstantScheduleRuleset('Condenser_Heating_Temperature' + str(HVACCount), 'Condenser_Heating_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', float(heatingDetails.supplyTemperature), model)
+                                else:
+                                    heatLoopTemp = self.createConstantScheduleRuleset('Condenser_Heating_Temperature' + str(HVACCount), 'Condenser_Heating_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 20, model)
                                 cndwl = self.createVRFCondenser(model, HVACCount, condLoopTemp, coolLoopTemp, heatLoopTemp)
+                                if coolingDetails.centralPlant == 'True' and centralConden == None:
+                                    centralConden = cndwl
                     #Make a DOAS air loop.
                     if airDetails != None and airDetails.centralAirLoop == 'True' and centralAir != None:
                         airLoop = self.addZoneToAirLoop(centralAir, 'DOAS', model, thermalZoneVector, hbZones, airDetails, coolingDetails, None, None)
                     else:
                         airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
-                    
                 else:
                     # Make a ground source condenser loop.
                     if (coolingDetails != None and coolingDetails.centralPlant == 'True') or (heatingDetails != None and heatingDetails.centralPlant == 'True'):
@@ -3269,6 +3631,278 @@ class WriteOPS(object):
                 spaceType.setDesignSpecificationOutdoorAir(ventilation)
             
         return space
+        
+        
+    def setGenerators(self,generators,simulationOutputs,model):
+        
+        def checks(HBsystemgenerators):
+            
+            # CHECK that HBgenerator names are unique for each HB generator
+            HBgenerators = []
+            for HBgenerator in HBsystemgenerators:
+                HBgenerators.extend([generator.name for generator in HBgenerator.windgenerators])
+                HBgenerators.extend([generator.name for generator in HBgenerator.PVgenerators])
+            if len(HBgenerators) != len(set(HBgenerators)):
+                duplicateHBgenerators =  [item for item, count in collections.Counter([item for item in HBgenerators]).items() if count > 1]
+                for HBgenerator in duplicateHBgenerators:
+                    warn = " Duplicate Honeybee generator (A PV or wind generator) name, named : " + HBgenerator +" detected!"+ "\n"+\
+                    "Please ensure that all PV and wind generators have unique names for EnergyPlus to run!"+ "\n"+\
+                    "This error usually occurs when several PVgen components are connected to one EnergyPlus simulation, and default names " + "\n"+\
+                    "have been assigned in each component. Fix this issue by inputing unique names to the input _name_ on the PVgen component."
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn )
+                return -1
+            
+            # CHECK that the HBsystemgenerator_name is unique for this simulation - Otherwise E+ will crash
+            if len(set([HBsystemgenerator.name for HBsystemgenerator in HBsystemgenerators])) != len(HBsystemgenerators):
+                duplicateHBsystemgenerators = [HBsystemgenerator for HBsystemgenerator, count in collections.Counter([HBsystemgenerator.name for HBsystemgenerator in HBsystemgenerators]).items() if count > 1]
+                for HBsystemgenerator in duplicateHBsystemgenerators:
+                    warn = " Duplicate Honeybee generation system name, named: " + HBsystemgenerator +" detected!"+ "\n"+\
+                    "Please ensure that all Honeybee generation systems have unique names for EnergyPlus to run!"
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn )
+                return -1
+                
+        hb_hivegen = sc.sticky["honeybee_generationHive"]()
+
+        HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(generators)
+        # Generation objects use "always on" schedule
+        #EPScheduleCollection.append('ALWAYS ON')
+        
+        checks(HBsystemgenerators)
+        
+        # This code here is used to extractingruntime periods if outputs are specified externally
+        # If the function returns and exception that means that external outputs are not specified.
+        # and teh default below will be used.
+        
+        def extracttimeperiod(simulationOutputs):
+            try:
+                timeperiod = simulationOutputs[-1].split(',')[-1]
+                HBgeneratortimeperiod = timeperiod.replace(";","")
+                return HBgeneratortimeperiod
+            except:
+                # By default return hourly if no simulation outputs are returned
+                return 'hourly'
+        
+        # Extract the timestep from the incoming component simulationOutputs if its being used
+        HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
+        
+        HBgeneratoroutputs = []
+        
+        # 1. Ensure the correct simulation outputs for the electric generators
+        if simulationOutputs == []:
+
+            HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
+            HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
+            
+        # 2. Add default PV outputs
+        HBgeneratoroutputs.append("outputcontrol:table:style,*,Photovoltaic:ElectricityProduced, monthly;")
+        HBgeneratoroutputs.append("output:meter,*,Photovoltaic:ElectricityProduced, runperiod;")
+        
+        if simulationOutputs != []:
+            if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
+                # These are the default inputs if the user does not specify their own using the component
+                # simulationOutputs, the default timestep is therefore hourly 
+                # the component Ladybug monthly bar chart needs hourly in order to run
+                HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
+                HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
+
+        # 3. Ensure the correct simulation outputs for each electric generator
+        for HBsystemcount, HBsystemgenerator in enumerate(HBsystemgenerators):
+            
+            # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
+            if HBsystemgenerator.name == None:
+                # This shouldn't happen as Honeybee generation system has a check on it 
+                # which doesnt allow for no names to be specified.
+                HBsystemgenerator_name = "generatorsystem" + str(HBsystemcount)
+            else:
+                HBsystemgenerator_name = str(HBsystemgenerator.name)
+            
+            # For this HBsystemgenerator write the output so that the produced electric energy is reported.
+            HBgeneratoroutputs.append("Output:Variable,"+str(HBsystemgenerator_name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
+            
+            # Determine whether it is a PV, Wind or fuel generator system
+            if HBsystemgenerator.PVgenerators != []:
+                    
+                for surface in HBsystemgenerator.HBzonesurfaces:
+                    if not surface.name in [surface.name().get() for surface in model.getSurfaces()]:
+                        warn  = "It has been detected that there are PV generators attached to sufaces of a Honeybee zone\n"+\
+                        " However this Honeybee zone has not been connected to the _HBZones input on this component\n"+\
+                        " Please connect it to run the EnergyPlus simulation!"
+                        print warn 
+                        ghenv.Component.AddRuntimeMessage(w, warn)
+                        return -1
+                        
+                if HBsystemgenerator.simulationinverter != None:
+                    
+                    # HBsystem contains a inverter and is a DC system there are NO batteries in the system
+
+                    inverterobject = HBsystemgenerator.simulationinverter[0] # All inverters are the same doesnt matter which one you pick
+                    
+                    # Write HBsystemgenerator inverters
+                    
+                    inverter = ops.ElectricLoadCenterInverterSimple(model)
+                    inverter.setInverterEfficiency(inverterobject.efficiency)
+                    
+                    # Write HBsystemgenerator ElectricLoadCenter:Distribution
+                    elcd = ops.ElectricLoadCenterDistribution(model)
+                    elcd.setInverter(inverter)
+                    
+                    # Write HBsystemgenerator photovoltaic generators
+                    for PVgen in HBsystemgenerator.PVgenerators:
+                        
+                        try:
+                            # Get the panel's surface by name from the openstudio model
+                            # model.getSurfaces is only zone surfaces
+                            for opssurface in model.getSurfaces():
+                                
+                                if str(opssurface.name().get()) == str(PVgen.mountedSurface.name):
+                                    
+                                    panel_surface = surface
+                                    
+                            if 'panel_surface' not in locals():
+                                # Happens when the mounted surface is not in the zone surfaces
+                                raise UnboundLocalError("Local variable 'panel_surface' referenced before assignment.")
+                            
+                            # Add the pv generator to the openstudio model
+                            pvgenerator = ops.GeneratorPhotovoltaic.simple(model)
+                            pvgenerator.setName(PVgen.name)
+                            pvgenerator.setNumberOfModulesInParallel(PVgen.NOparallel)
+                            pvgenerator.setNumberOfModulesInSeries(PVgen.NOseries)
+                            pvgenerator.setSurface(panel_surface)
+                            elcd.addGenerator(pvgenerator)
+                            
+                        except UnboundLocalError as e:
+                            # mounted surface is not in model.getSurfaces so so PV generator is mounted on context surface
+
+                            if str(e) != "Local variable 'panel_surface' referenced before assignment.":
+                                # Some other error
+                                raise 
+                            else:
+                                
+                                # https://stackoverflow.com/questions/16001959/how-can-you-execute-a-command-at-the-end-of-a-for-loop
+                                
+                                assigned = False
+                                
+                                def assignMountingSurface(PVgen,model):
+                                
+                                    for shadingSurface in model.getShadingSurfaces():
+                                        
+                                        def coordinatesOfMountedSurface(PVgen):
+                                        
+                                            coordinates = PVgen.mountedSurface.extractPoints(1, False, None, 'UpperLeftCorner')
+                                            if type(coordinates[0])is not list and type(coordinates[0]) is not tuple:
+                                                coordinates = [coordinates]
+                                            
+                                            # generate OpenStudio points
+                                            shdPointVectors = ops.Point3dVector()
+                                            
+                                            for shadingCount, ptList in enumerate(coordinates):
+                                                for pt in ptList:
+                                                    # add the points to an openStudio list
+                                                    shdPointVectors.Add(ops.Point3d(pt.X,pt.Y,pt.Z))
+                                                    
+                                            return shdPointVectors
+                                                    
+                                        def toPythonArray(vector):
+                                            # for some reason the equals in OpenStudio arrays dont compare
+                                            # for this reason extract out all the points for a comparision
+                                            allPoints = []
+                                            
+                                            for point in shadingSurface.vertices():
+        
+                                                allPoints.append([point.x(),point.y(),point.z()])
+                                                
+                                            return allPoints
+                                            
+                                        shdPointVectors = coordinatesOfMountedSurface(PVgen)
+                                        
+                                        if toPythonArray(shdPointVectors) == toPythonArray(shadingSurface.vertices()):
+                                            
+                                            # If coordinates of Mounted Surface and Context Surface are the same - they are the same surface so mount the surface there
+                                            
+                                            pvgenerator = ops.GeneratorPhotovoltaic.simple(model)
+                                            pvgenerator.setName(PVgen.name)
+                                            pvgenerator.setNumberOfModulesInParallel(PVgen.NOparallel)
+                                            pvgenerator.setNumberOfModulesInSeries(PVgen.NOseries)
+                                            pvgenerator.setSurface(shadingSurface)
+                                            elcd.addGenerator(pvgenerator)
+
+                                            return True
+                                        
+                                        
+                                assigned = assignMountingSurface(PVgen,model)
+
+                                if not assigned:
+                                    # Shading surface is not in the model yet! So it wasn't connected to HBContext_
+                                    # Add it! - copied the code from the function OPSShdSurface - but we didnt need all the function
+
+                                    # Shading Group
+                                    shadingGroup = ops.ShadingSurfaceGroup(model)
+            
+                                    coordinates = PVgen.mountedSurface.extractPoints(1, False, None, 'UpperLeftCorner')
+                                    if type(coordinates[0])is not list and type(coordinates[0]) is not tuple:
+                                        coordinates = [coordinates]
+                                    
+                                    shadingSch = ""
+                                    schedule = PVgen.mountedSurface.TransmittanceSCH
+                                    if schedule!="":
+                                        # transmittance schedule
+                                        shadingSch = self.getOSSchedule(schedule, model)
+                                    
+                                    # generate OpenStudio points
+                                    shdPointVectors = ops.Point3dVector();
+                                    
+                                    # surfaceCount is the number of shading surfaces already in the model
+                                    surfaceCount = model.getShadingSurfaces().Count
+                                    
+                                    for shadingCount, ptList in enumerate(coordinates):
+                                        for pt in ptList:
+                                            # add the points to an openStudio list
+                                            shdPointVectors.Add(ops.Point3d(pt.X,pt.Y,pt.Z))
+                                        
+                                        shdSurface = ops.ShadingSurface(shdPointVectors, model)
+                                        shdSurface.setName("shdSurface_" + str(surfaceCount) + "_" + str(shadingCount))
+                                        shdSurface.setShadingSurfaceGroup(shadingGroup)
+
+                                        if shadingSch!="": shdSurface.setTransmittanceSchedule(shadingSch)
+                                            
+                                    # Finally add the PV generator
+                                    
+                                    assignMountingSurface(PVgen,model)
+                                    
+                                                                    
+                    if HBsystemgenerator.battery != None:
+                        # XXX No implemented yet
+                        elecstorageobject = HBsystemgenerator.battery
+                        battery = ops.ElectricalStorage(model)
+                        # Write HBsystemgenerator battery
+                        
+                        battery = ops.ElectricLoadCenter_Storage.simple(model)
+                        
+
+            elif HBsystemgenerator.windgenerators != []:
+                operationscheme = 'Baseload'
+                busstype = 'AlternatingCurrent'
+                demandlimit = ''
+                trackschedule = 'Always On'
+                trackmeterschedule = ''
+                inverterobject = None
+                elecstorageobject = None
+                
+                # Write HBsystemgenerator wind generators
+                for windgenerator in HBsystemgenerator.windgenerators:
+                    idfFile.write(hb_writeIDF.wind_generator(windgenerator))
+                    WriteIDF.financialdata.append('Wind turbine cost - '+str(windgenerator.cost_)) 
+                # Write HBsystemgenerator ElectricLoadCenter:Distribution
+                idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
+            
+            elif HBsystemgenerator.fuelgenerators != []: # XXX 14/04/2015 not yet implemented so always equal to []
+                pass
+            
+            
+        # Write the outputs required for HB generators to the model
+        
+        self.setOutputs(HBgeneratoroutputs, model)
+        
     
     def createOSStanadardOpaqueMaterial(self, HBMaterialName, values, model):
         # values = ['Roughness', 'Thickness {m}', 'Conductivity {W/m-K}', 'Density {kg/m3}', 'Specific Heat {J/kg-K}', 'Thermal Absorptance', 'Solar Absorptance', 'Visible Absorptance']
@@ -3625,8 +4259,8 @@ class WriteOPS(object):
         checked, coordinates= self.checkCoordinates(coordinates)
         
         if int(surface.type) == 4: surface.type = 0
+        
         if checked:
-          
             # generate OpenStudio points
             pointVectors = ops.Point3dVector();
             for pt in coordinates:
@@ -3663,14 +4297,14 @@ class WriteOPS(object):
                     except:
                         constructionText = None
                 
-                if constructionText != str(surface.EPConstruction) or surface.BC.upper() == "ADIABATIC":
+                if constructionText != str(surface.EPConstruction) or surface.BC.upper() == "ADIABATIC" or surface.BC.upper() == "SURFACE":
                     if self.isConstructionInLib(surface.EPConstruction):
                         construction = self.getConstructionFromLib(surface.EPConstruction)
                     else:
                         construction = self.getOSConstruction(surface.EPConstruction, model)
                         self.addConstructionToLib(surface.EPConstruction, construction)
                     thisSurface.setConstruction(construction)
-            elif surface.BC.upper() == "ADIABATIC":
+            elif surface.BC.upper() == "ADIABATIC" or surface.BC.upper() == "SURFACE":
                 if self.isConstructionInLib(surface.construction):
                     construction = self.getConstructionFromLib(surface.construction)
                 else:
@@ -3689,7 +4323,7 @@ class WriteOPS(object):
             # Boundary condition object
             #setAdjacentSurface(self: Surface, surface: Surface)
             if surface.BC.lower() == "surface" and surface.BCObject.name.strip()!="":
-                self.adjacentSurfacesDict[surface.name] = [surface.BCObject.name, thisSurface]
+                self.adjacentSurfacesDict[surface.name] = [surface.BCObject.name, thisSurface.handle()]
             
             return thisSurface
     
@@ -3719,7 +4353,7 @@ class WriteOPS(object):
                 else:
                     constructionText = str(self.defaultConstrDict['5'].name())
                 
-                if constructionText != str(childSrf.EPConstruction):
+                if constructionText != str(childSrf.EPConstruction) or surface.BC.upper() == "SURFACE":
                     if self.isConstructionInLib(childSrf.EPConstruction):
                         construction = self.getConstructionFromLib(childSrf.EPConstruction)
                     else:
@@ -3748,7 +4382,7 @@ class WriteOPS(object):
                 if childSrf.name == childSrf.BCObject.name:
                     raise Exception("Interior facing surfaces can't have the same name: %s"%childSrf.name + \
                         "\nRename one of the surfaces and try again!")
-                self.adjacentFenSrfsDict[childSrf.name] = [childSrf.BCObject.name, glazing]
+                self.adjacentFenSrfsDict[childSrf.name] = [childSrf.BCObject.name, glazing.handle()]
     
     def OPSShdSurface(self, shdSurfaces, model):
         shadingGroup = ops.ShadingSurfaceGroup(model)
@@ -3767,6 +4401,7 @@ class WriteOPS(object):
             # generate OpenStudio points
             shdPointVectors = ops.Point3dVector();
             
+
             for shadingCount, ptList in enumerate(coordinates):
                 for pt in ptList:
                     # add the points to an openStudio list
@@ -3778,26 +4413,64 @@ class WriteOPS(object):
                 if shadingSch!="": shdSurface.setTransmittanceSchedule(shadingSch)
                 
     
-    def setAdjacentSurfaces(self):
+    def setAdjacentSurfaces(self, model):
+        defaultConstrDict = {
+            'Wall': 'Interior Wall',
+            'Ceiling': 'Interior Ceiling',
+            'RoofCeiling': 'Interior Ceiling',
+            'Floor': 'Interior Floor'}
+        
         # Set Adjacent zone surfaces.
         for surfaceName in self.adjacentSurfacesDict.keys():
-            adjacentSurfaceName, OSSurface = self.adjacentSurfacesDict[surfaceName]
+            adjacentSurfaceName, OSSurfaceHandle = self.adjacentSurfacesDict[surfaceName]
+            OSSurface = model.getSurface(OSSurfaceHandle).get()
+            
             try:
-                adjacentOSSurface = self.adjacentSurfacesDict[adjacentSurfaceName][1]
+                adjacentOSSurfaceHandle = self.adjacentSurfacesDict[adjacentSurfaceName][1]
+                adjacentOSSurface = model.getSurface(adjacentOSSurfaceHandle).get()
                 OSSurface.setAdjacentSurface(adjacentOSSurface)
             except:
-                warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
-                print warning
+                # if we didn't find the adjacent surfcae, do the next most accurate thing:
+                # make the surface adiabatic and add an interior construction
+                try:
+                    OSSurface.setOutsideBoundaryCondition("ADIABATIC")
+                    OSSurface.setSunExposure("NOSUN")
+                    OSSurface.setWindExposure("NOWIND")
+                    if self.isConstructionInLib(defaultConstrDict[str(OSSurface.surfaceType())]):
+                        construction = self.getConstructionFromLib(defaultConstrDict[str(OSSurface.surfaceType())])
+                    else:
+                        construction = self.getOSConstruction(defaultConstrDict[str(OSSurface.surfaceType())], model)
+                        self.addConstructionToLib(defaultConstrDict[str(OSSurface.surfaceType())], construction)
+                    OSSurface.setConstruction(construction)
+                    warning = "Adjacent surface " + adjacentSurfaceName + " was not found.\n" + \
+                        "Boundary for surface " + surfaceName + " will be set to adiabatic."
+                    print warning
+                except:
+                    warning = "Adjacent surface " + adjacentSurfaceName + " was not found.\n" + \
+                        "Boundary for surface " + surfaceName + " will be set to adiabatic."
+                    print warning
         
         # Set adjacent Fenestration surfaces.
         for surfaceName in self.adjacentFenSrfsDict.keys():
-            adjacentSurfaceName, OSSurface = self.adjacentFenSrfsDict[surfaceName]
+            adjacentSurfaceName, OSSurfaceHandle = self.adjacentFenSrfsDict[surfaceName]
+            OSSurface = model.getSubSurface(OSSurfaceHandle).get()
+            
             try:
-                adjacentOSSurface = self.adjacentFenSrfsDict[adjacentSurfaceName][1]
+                adjacentOSSurfaceHandle = self.adjacentFenSrfsDict[adjacentSurfaceName][1]
+                adjacentOSSurface = model.getSubSurface(adjacentOSSurfaceHandle).get()
                 OSSurface.setAdjacentSubSurface(adjacentOSSurface)
             except:
-                warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
-                print warning
+                # if we didn't find the adjacent surfcae, do the next most accurate thing:
+                # delete the interior window and treat the parent surface as adiabatic.
+                try:
+                    OSSurface.remove()
+                    warning = "Adjacent surface " + adjacentSurfaceName + " was not found.\n" + \
+                            "Interior window " + surfaceName + " will be removed and its parent will be set to adiabatic."
+                    print warning
+                except:
+                    warning = "Adjacent surface " + adjacentSurfaceName + " was not found.\n" + \
+                        "Interior window " + surfaceName + " will be removed and its parent will be set to adiabatic."
+                    print warning
     
     def setOutputVariable(self, fields, model):
         """
@@ -4137,9 +4810,8 @@ class EPFeaturesNotInOS(object):
             scheduleFileName = os.path.basename(zone.ETschedule)
             scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1]).upper()
             earthTubeSched = scheduleObjectName
-           
         else: earthTubeSched = zone.ETschedule
-    
+        
         return '\nZoneEarthtube,\n' + \
             '\t' + zone.name + ',\t!- Zone Name\n' + \
             '\t' + str(earthTubeSched) + ',\t!- Schedule Name\n'+\
@@ -4390,6 +5062,13 @@ class RunOPS(object):
         for zone in HBZones:
             if zone.earthtube == True:
                 lines.append(otherFeatureClass.EarthTube(zone))
+                if zone.ETschedule != 'Always On Discrete':
+                    if zone.ETschedule.upper().endswith('.CSV'):
+                        lines.append(otherFeatureClass.createCSVSchedString(zone.ETschedule))
+                    else:
+                        warning = 'Please use a CSV schedule for earth tubes. Other schedules are not supported at the moment.'
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         
         # Write in any window spectral data.
         if self.windowSpectralData != {}:
@@ -4646,9 +5325,16 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     ddyFound = hb_writeOPS.addDesignDays(model)
     if ddyFound == False:
         # Create a ddy file from the information in the EPW.
-        hb_writeOPS.createDdyFromEPW(epwWeatherFile, subWorkingDir, lb_preparation, lb_comfortModels)
-        hb_writeOPS.addDesignDays(model)
-    
+        try:
+            hb_writeOPS.createDdyFromEPW(epwWeatherFile, subWorkingDir, lb_preparation, lb_comfortModels)
+            hb_writeOPS.addDesignDays(model)
+        except:
+            warning = "Honeybee could not find a ddy next to the epw file and could not create sizing criteria from the data in the epw file.\n" + \
+                "No sizing calcualtion will be performed for this model."
+            print warning
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            
     # call Honeybee objects from the hive
     HBZones = hb_hive.callFromHoneybeeHive(HBZones)
     
@@ -4752,7 +5438,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         ossch = hb_writeOPS.getOSSchedule(schedName, model)
     
     # this should be done once for the whole model
-    hb_writeOPS.setAdjacentSurfaces()
+    hb_writeOPS.setAdjacentSurfaces(model)
     
     # add systems
     hb_writeOPS.addSystemsToZones(model)
@@ -4760,13 +5446,13 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # add zone air mixing objects.
     for zoneCount, zone in enumerate(HBZones):
         if zone.mixAir == True: hb_writeOPS.setAirMixing(zone, model)
-    
+        
     # outputs
     defaultOutputs = ['Output:Variable,*,Zone Ideal Loads Supply Air Total Cooling Energy, hourly;',\
         'Output:Variable,*,Cooling Coil Electric Energy, hourly;',\
         'Output:Variable,*,Chiller Electric Energy, hourly;',\
         'Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, hourly;',\
-        'Output:Variable,*,Boiler Heating Energy, hourly;',\
+        'Output:Variable,*,Boiler Gas Energy, hourly;',\
         'Output:Variable,*,Heating Coil Total Heating Energy, hourly;',\
         'Output:Variable,*,Heating Coil Gas Energy, hourly;',\
         'Output:Variable,*,Heating Coil Electric Energy, hourly;',\
@@ -4784,8 +5470,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         outputs = simulationOutputs
     else:
        outputs = defaultOutputs
-    hb_writeOPS.setOutputs(outputs, model)
-    
+       
+    # Add generators to the model (PV,wind etc)
+
     # add shading surfaces if any
     if HBContext!=[] and HBContext[0]!=None:
         shdingSurfcaes = hb_hive.callFromHoneybeeHive(HBContext)
@@ -4794,6 +5481,12 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             for con in shdingSurfcaes:
                 con.transform(NUscale, "", False)
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
+    
+    if HBGenerators_ != []:
+        
+        hb_writeOPS.setGenerators(HBGenerators_,outputs,model)
+       
+    hb_writeOPS.setOutputs(outputs, model)
     
     # Get the objects in the file that we need to replace or add because OpenStudio does not support them.
     csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs = hb_writeOPS.getObjToReplace()
@@ -4846,7 +5539,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                         w = gh.GH_RuntimeMessageLevel.Warning
                         ghenv.Component.AddRuntimeMessage(w, warning)
                         resultFile = None
-                    elif "** Severe  **" in line and 'CheckControllerListOrder' not in line and not "surfaces and are non-convex" in line:
+                    elif "** Severe  **" in line and 'CheckControllerListOrder' not in line and not "surfaces and are non-convex" in line and not "Degenerate surfaces" in line:
                         comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
                         c = gh.GH_RuntimeMessageLevel.Warning
                         ghenv.Component.AddRuntimeMessage(c, comment)

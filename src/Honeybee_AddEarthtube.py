@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Anton Szilasi <ajszilas@gmail.com> 
+# Copyright (c) 2013-2018, Anton Szilasi <ajszilas@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -38,7 +38,7 @@ Where:
 For more information about the Energy Plus Earthtube please see:
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-airflow.html#zoneearthtube-earth-tube
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
 
     Args:
         _HBZones: The Honeybee zones to which Earthtubes will be added to. Only one earth tube will be added to each zone.
@@ -80,7 +80,7 @@ Provided by Honeybee 0.0.62
         _fanPrises_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the pressure rise experienced across the fan in Pascals (N/m2) the default is 150 Pascals which will be used if no value is given for a zone.
         -
         This is a function of the fan and plays a role in determining the amount of energy consumed by the fan.
-        _fanEfficiencies_: This field can be a float or a list of floats between 0 and 1 which correspond sequentially to the _HBZones. Each float is the earth tube fan efficiency which is a decimal number between 0.0 and 1.0 the default is 1 which will be used if no value is given for a zone.
+        _fanEfficiencies_: This field can be a float or a list of floats between 0 and 1 which correspond sequentially to the _HBZones. Each float is the earth tube fan efficiency which is a decimal number between 0.0 and 1.0 the default is 0.7 which will be used if no value is given for a zone.
         -
         This is a function of the fan and plays a role in determining the amount of energy consumed by the fan.        _pipeRadii_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the radius of the earth tube(in meters) the default is 0.5 meter which will be used if no value is given for a zone. This plays a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe. 
         -
@@ -112,7 +112,7 @@ Provided by Honeybee 0.0.62
 """
 
 ghenv.Component.Name = "Honeybee_AddEarthtube"
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -132,6 +132,12 @@ import subprocess
 import tempfile
 import System
 import zipfile
+
+try:
+    System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
+except AttributeError:
+    # TLS 1.2 not provided by MacOS .NET Core; revert to using TLS 1.0
+    System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls
 
 readmedatatree = Grasshopper.DataTree[object]()
 
@@ -216,9 +222,9 @@ def checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemp
     
     for values in _fanEfficiencies_:
     
-        if (fan_n < 0) or (fan_n > 1):
+        if (values < 0) or (values > 1):
             
-            warnMsg =  "fan_n - total fan efficiency must be a decimal number between 0 and 1!"
+            warnMsg =  "_fanEfficiencies_ must be a decimal number between 0 and 1!"
             print warnMsg
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warnMsg)
@@ -512,7 +518,7 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         try: zone.efficiency = _fanEfficiencies_[zoneCount]
         
         except IndexError:
-            zone.efficiency  = 1
+            zone.efficiency  = 0.7
         
         # Writing earth tube earthtube pipe radius
         

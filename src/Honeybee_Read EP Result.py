@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2018, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ _
 This component reads only the results related to zones.  For results related to surfaces, you should use the "Honeybee_Read EP Surface Result" component.
 
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_31_2017'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -308,7 +308,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
                     
-                    if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column or 'Zone Ideal Loads Supply Air Sensible Cooling Energy' in column or 'Zone Ideal Loads Supply Air Latent Cooling Energy' in column or 'Chiller Electric Energy' in column or 'Cooling Coil Electric Energy' in column or 'Zone VRF Air Terminal Cooling Electric Energy' in column or 'VRF Heat Pump Cooling Electric Energy' in column:
+                    if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column or 'Zone Ideal Loads Supply Air Sensible Cooling Energy' in column or 'Zone Ideal Loads Supply Air Latent Cooling Energy' in column or 'Chiller Electric Energy' in column or 'Cooling Coil Electric Energy' in column or 'Zone VRF Air Terminal Cooling Electric Energy' in column or 'VRF Heat Pump Cooling Electric Energy' in column or 'Chiller Heater System Cooling Electric Energy' in column:
                         
                         if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
@@ -334,7 +334,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         except:
                             key.append(-1)
                     
-                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column or 'Zone Ideal Loads Supply Air Sensible Heating Energy' in column or 'Zone Ideal Loads Supply Air Latent Heating Energy' in column or 'Boiler Heating Energy' in column or 'Heating Coil Total Heating Energy' in column or 'Heating Coil Gas Energy' in column or 'Heating Coil Electric Energy' in column or 'Humidifier Electric Energy' in column or 'Zone VRF Air Terminal Heating Electric Energy' in column or 'VRF Heat Pump Heating Electric Energy' in column:
+                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column or 'Zone Ideal Loads Supply Air Sensible Heating Energy' in column or 'Zone Ideal Loads Supply Air Latent Heating Energy' in column or 'Boiler Heating Energy' in column or 'Boiler Gas Energy' in column or 'Heating Coil Total Heating Energy' in column or 'Heating Coil Gas Energy' in column or 'Heating Coil Electric Energy' in column or 'Humidifier Electric Energy' in column or 'Zone VRF Air Terminal Heating Electric Energy' in column or 'VRF Heat Pump Heating Electric Energy' in column or 'Chiller Heater System Heating Electric Energy' in column:
                         idealAirTrigger = 2
                         if 'Zone Ideal Loads Supply Air Total Heating Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
@@ -351,7 +351,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         
                         if 'COIL HEATING GAS' in column and not 'Heating Coil Electric Energy' in column:
                             idealAirTrigger = False
-                        elif 'Boiler Heating Energy' in column:
+                        elif 'Boiler Heating Energy' in column or 'Boiler Gas Energy' in column:
                             idealAirTrigger = False
                         
                         try:

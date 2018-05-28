@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari and Chris Mackey <mostapha@ladybug.tools and Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari and Chris Mackey <mostapha@ladybug.tools and Chris@MackeyArchitecture.com> 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
 # or (at your option) any later version. 
@@ -23,7 +23,7 @@ Use this component to export HBZones into an IDF file, and run them through Ener
 _
 The component outputs the report from the simulation, the file path of the IDF file, and the CSV result file from the EnergyPlus run.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     Args:
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         _epwFile: An .epw file path on your system as a text string.
@@ -62,11 +62,11 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_29_2017'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_14_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
+#compatibleHBVersion = VER 0.0.63\nMAR_01_2018
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -101,36 +101,38 @@ class WriteIDF(object):
     
     financialdata = []
     
+    @staticmethod
+    def booleanToYesNo(input):
+        if input:
+            return 'Yes'
+        else:
+            return 'False'
+
     def __init__(self, workingDir):
         self.fileBasedSchedules = {}
         self.workingDir = workingDir
-        
+
     def EPZone(self, zone):
+        if zone.isPlenum:
+            zone.partOfArea = False
         
         zoneStr = '\nZone,\n' + \
                 '\t' + zone.name + ',\n' + \
                 '\t' + `zone.north` + ',\t!-Direction of Relative North {deg}\n' + \
                 '\t' + `zone.origin.X` + ',\t!- X Origin {m}\n' + \
                 '\t' + `zone.origin.Y` + ',\t!- Y Origin {m}\n' + \
-                '\t' + `zone.origin.Z` + ',\t!- Z Origin {m}\n'
-                
-        try:
-            if zone.isPlenum:
-                return zoneStr + \
-                '\t1,\t!- Type\n' + \
-                '\t,\t!- Multiplier\n' + \
-                '\t,\t!- Ceiling Height\n' + \
-                '\t,\t!- Volume\n' + \
-                '\t,\t!- Floor Area\n' + \
-                '\t,\t!- Zone Inside Convection Algorithm\n' + \
-                '\t,\t!- Zone Outside Convection Algorithm\n' + \
-                '\tNo;\t!- Part of Total Floor Area\n'                
-            else:
-                return zoneStr + '\t1;\t!- Type\n'
-        except:
-            #older versions
-            return zoneStr + '\t1;\t!- Type\n'
-            
+                '\t' + `zone.origin.Z` + ',\t!- Z Origin {m}\n' + \
+                '\t' + str(zone.zoneType) + ',\t!- Type\n' + \
+                '\t' + str(zone.multiplier) + ',\t!- Multiplier\n' + \
+                '\t' + str(zone.ceilingHeight) + ',\t!- Ceiling Height\n' + \
+                '\t' + str(zone.volume) + ',\t!- Volume\n' + \
+                '\t' + str(zone.floorArea) + ',\t!- Floor Area\n' + \
+                '\t' + str(zone.insideConvectionAlgorithm) + ',\t!- Zone Inside Convection Algorithm\n' + \
+                '\t' + str(zone.outsideConvectionAlgorithm) + ',\t!- Zone Outside Convection Algorithm\n' + \
+                '\t' + self.booleanToYesNo(zone.partOfArea) + ';\t!- Part of Total Floor Area\n'                
+        
+        return zoneStr
+
     def EPZoneSurface (self, surface):
         coordinates = surface.coordinates
         checked, coordinates= self.checkCoordinates(coordinates)
@@ -551,14 +553,16 @@ class WriteIDF(object):
                     coolSupply = str(airDetails.coolingSupplyAirTemp)
                 if airDetails.airsideEconomizer != 'Default':
                     airSideEconomizer =  airDetails.airsideEconomizer
-                if airDetails.heatRecovery != 'Default':
-                    heatRecovery = airDetails.heatRecovery
-                if airDetails.recoveryEffectiveness != 'Default':
-                    if heatRecovery == 'Sensible':
-                        sensRecovEffectiveness = str(airDetails.recoveryEffectiveness)
-                    elif heatRecovery == 'Enthalpy':
-                        sensRecovEffectiveness = str(airDetails.recoveryEffectiveness)
-                        latRecovEffectiveness = str(airDetails.recoveryEffectiveness)
+                
+                if airDetails.sensibleHeatRecovery != 'Default' and airDetails.sensibleHeatRecovery != 0:
+                    heatRecovery = 'Sensible'
+                    sensRecovEffectiveness = str(airDetails.sensibleHeatRecovery)
+                    latRecovEffectiveness = 0
+                if airDetails.latentHeatRecovery != 'Default' and airDetails.latentHeatRecovery != 0:
+                    heatRecovery = 'Enthalpy'
+                    latRecovEffectiveness = airDetails.latentHeatRecovery
+                    if airDetails.sensibleHeatRecovery == 'Default':
+                        zoneIdealAir.setSensibleHeatRecoveryEffectiveness(0.8)
             
             # Set the heatingDetails.
             heatAvailSch = ''
@@ -1723,13 +1727,20 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         print "Extreme values from the weather file design will be used instead."
     
     if usedDDY == False:
-        # If there are no design days, analyze the EPW file and produce design day objects.
-        ddyFile = hb_writeIDF.createDdyFromEPW(epwFileAddress, workingDir, lb_preparation, lb_comfortModels)
-        designDayLines = hb_writeIDF.extractDDYObjs(ddyFile)
-        if designDayLines != ['\n']:
-            for line in designDayLines:
-                idfFile.write(line)
-            usedDDY = True
+        try:
+            # If there are no design days, analyze the EPW file and produce design day objects.
+            ddyFile = hb_writeIDF.createDdyFromEPW(epwFileAddress, workingDir, lb_preparation, lb_comfortModels)
+            designDayLines = hb_writeIDF.extractDDYObjs(ddyFile)
+            if designDayLines != ['\n']:
+                for line in designDayLines:
+                    idfFile.write(line)
+                usedDDY = True
+        except:
+            warning = "Honeybee could not find a ddy next to the epw file and could not create sizing criteria from the data in the epw file.\n" + \
+                "No sizing calcualtion will be performed for this model."
+            print warning
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
     
     # simulationControl
     idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl[0:5]))

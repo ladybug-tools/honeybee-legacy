@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com.com> 
+# Copyright (c) 2013-2018, Chris Mackey <Chris@MackeyArchitecture.com.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Use this component to write your THERM polygons and boundary conditions into a therm XML that can be opened ready-to-run in THERM.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
 
     Args:
         _polygons: A list of thermPolygons from one or more "Honeybee_Create Therm Polygons" components.
@@ -57,7 +57,7 @@ from shutil import copyfile
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_04_2017'
+ghenv.Component.Message = 'VER 0.0.63\nFEB_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -275,6 +275,8 @@ def checkTheInputs():
         # Check to be sure that the polyline geomtry is clockwise in the base plane.
         if str(polygon.polylineGeo.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
             polygon.polylineGeo.Reverse()
+        if str(rc.RhinoApp.Version).startswith('6'):
+            polygon.polylineGeo.Reverse()
         # Remake the list of vertices so that we are sure they are oriented clockwise.
         polygon.vertices = []
         for segment in polygon.polylineGeo.DuplicateSegments():
@@ -305,6 +307,7 @@ def checkTheInputs():
     for polygon in thermPolygons:
         allPolygonGeo.append(polygon.geometry)
     joinedPolygons = rc.Geometry.Brep.JoinBreps(allPolygonGeo, sc.doc.ModelAbsoluteTolerance)
+    probRegions = joinedPolygons
     if len(joinedPolygons) != 1:
         warning = "Geometry connected to _polygons does not form a single polysurface and THERM does not like this. \n" + \
         "A thermFile will still be written but you will have to finish making the geometry in the THERM interface."
@@ -332,6 +335,8 @@ def checkTheInputs():
         # Check to be sure the curve is facing counter-clockwise.
         encircling = allBoundary[0]
     if str(encircling.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
+        encircling.Reverse()
+    if str(rc.RhinoApp.Version).startswith('6'):
         encircling.Reverse()
     polygonBoundaries = encircling.DuplicateSegments()
     

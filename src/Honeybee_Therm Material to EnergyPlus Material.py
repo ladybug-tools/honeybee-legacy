@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2018, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -27,7 +27,7 @@ This component requires you to know a lot of the characteristics of the material
 _
 If you are not able to find all of the necessary material characteristcs and your desired material is relatively light, it might be easier for you to use a "Honeybee_EnergyPlus NoMass Opaque Material."
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         _thermMaterial: The name of a Therm material from the ThermMaterials output from the from the "Call from EP Construction Library" component.
@@ -36,13 +36,14 @@ Provided by Honeybee 0.0.62
         _density:  A number representing the density of the material in kg/m3.  This is essentially the mass one cubic meter of the material.
         _specificHeat:  A number representing the specific heat capacity of the material in J/kg-K.  This is essentially the number of joules needed to raise one kg of the material by 1 degree Kelvin.
     Returns:
-        EPMaterial: An opaque material that can be plugged into the "Honeybee_EnergyPlus Construction" component.
+        EPMaterialStr: An opaque material that can be plugged into the "Honeybee_EnergyPlus Construction" component.
+        matName: The name of the generated EP Material.
 
 """
 
 ghenv.Component.Name = "Honeybee_Therm Material to EnergyPlus Material"
 ghenv.Component.NickName = 'ThermMat2EPMat'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -108,7 +109,7 @@ def main(thermMaterial, roughness, thickness, density, specificHeat):
     visAbsp = thermMaterial['Absorptivity']
     if roughness == None: roughness = "Rough"
     
-    values = [name.upper(), roughness, thickness, conductivity, density, specificHeat, thermAbsp, solAbsp, visAbsp]
+    values = [name.upper()+'-EP', roughness, thickness, conductivity, density, specificHeat, thermAbsp, solAbsp, visAbsp]
     comments = ["Name", "Roughness", "Thickness {m}", "Conductivity {W/m-K}", "Density {kg/m3}", "Specific Heat {J/kg-K}", "Thermal Absorptance", "Solar Absorptance", "Visible Absorptance"]
     
     materialStr = "Material,\n"
@@ -119,7 +120,7 @@ def main(thermMaterial, roughness, thickness, density, specificHeat):
         else:
             materialStr += str(value) + ";    !" + str(comment)
             
-    return materialStr
+    return materialStr, name.upper()+'-EP'
 
 
 #Honeybee check.
@@ -144,4 +145,4 @@ else:
 if initCheck == True and _thermMaterial and _thickness and _density and _specificHeat:
     thermMaterial = checkInputs()
     if thermMaterial != -1:
-        EPMaterial = main(thermMaterial, _roughness_, _thickness, _density, _specificHeat)
+        EPMaterialStr, matName = main(thermMaterial, _roughness_, _thickness, _density, _specificHeat)

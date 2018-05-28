@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Abraham Yezioro <ayez@ar.technion.ac.il> 
+# Copyright (c) 2013-2018, Abraham Yezioro <ayez@ar.technion.ac.il> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,21 +26,22 @@ Use this component to transform ACH or inifitration per area of facade to m3/s-m
 Plug the result to the Honeybee setEPZoneLoads component, infiltrationRatePerArea_ or  infiltrationRatePerArea_ inputs
 For the blowerPressue input, the component assumes a natural pressure differential between indoors and outdoors at 4 Pascals.  However, the passive house standard sets this at a low 0.4303.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         _HBZones: Honeybee zones for which you want to calculate the infiltration or ventilation rates.
-        _airFlowRate: A number representing the air flow rate into the HBZone in Air Changes per Hour (ACH).  Alternatively this number can be in m3/s per m2 of surface area if the input below is set to "False."  The latter is useful for infiltration, which is typically specified as a unit per area of facade.
+        _airFlowRate: A number representing the air flow rate into the HBZone in Air Changes per Hour (ACH).  Alternatively this number can be in m3/s per m2 of exposed envelope area if the input below is set to "False."  The latter is useful for infiltration, which is typically specified as a unit per area of exposed envelope.
         _ACHorM3sM2_: Set to "True" to have the airFlowRate above interpreted as ACH. Set to "False" to have itinterpreted as m3/s per m2 of outdoor-exposed zone surface area.  This latter is useful for infiltration rates, which are usually defined as an intensity of flow per unit outdoor exposure.  The default is set to True for ACH.
-        _blowerPressure_: A number representing the pressure differential in Pascals (Pa) between indoors/outdoors at which the specified flow rate above occurs.  When set to 0 or left untouched, the specified input flow rate to this component will be the same as that output from the component (only the units will be converted).  However, many blower door tests for infiltration occur at higher pressure differentials of 50 Pa or 75 Pa.  You can input this pressure differential here in order to convert the flow rate of this blower door test to typical building pressure flow rates of 4 Pa.
+        _blowerPressure_: A number representing the pressure differential in Pascals (Pa) between indoors/outdoors at which the specified flow rate above occurs.  When set to 0 or left untouched, the specified input flow rate to this component will be the same as that output from the component (only the units will be converted and no translation from one pressure to another will occur).  However, many blower door tests for infiltration occur at higher pressure differentials of 50 Pa or 75 Pa.  You can input this pressure differential here in order to convert the flow rate of this blower door test to typical building pressure flow rates of 4 Pa.
     Returns:
         readMe!: Report of the calculations
-        infORventPerArea: infiltrationRatePerArea or ventilationPerArea in m3/s-m2 (Cubic meters per second per square meter of floor) that can be plugged into the "Set EnergyPlus Zone Loads" component.
+        infORventPerArea: infiltrationRatePerArea or ventilationPerArea in m3/s-m2 (Cubic meters per second per square meter of floor area) that can be plugged into the "Set EnergyPlus Zone Loads" component.
         allFloors: The floors of the zones that are used to determine the infORventPerArea.
+        allExposed: If _ACHorM3sM2_ is set to "False", the area of the zone that is interpreted as exposed srface area will be output here.
 """
 ghenv.Component.Name = "Honeybee_infORventPerArea Calculator"
 ghenv.Component.NickName = 'ACH2m3/s-m2 Calculator'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_03_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -75,6 +76,7 @@ def checkInputs():
 
 def main(hb_hive, HBZones, airFlowRate, unit):
     allFloors  = []
+    allExposed = []
     infORventPerArea = []
     
     # call the objects from the hive
@@ -104,19 +106,26 @@ def main(hb_hive, HBZones, airFlowRate, unit):
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
             infORventPerArea.append(HZone.ventilationPerArea)
-        infORventPerAreaRes = 'infiltration/ventilationPerArea %.6f m3/second-m2' % (infORventPerArea[count])
+        if unit == True:
+            infORventPerAreaRes = '; Flowrate %.3f ACH' % ((standardFlowRate * 3600)/ zoneVolume)
+        else:
+            infORventPerAreaRes = '; Flowrate Per Exposed Surface Area %.6f m3/second-m2' % (standardFlowRate/zoneSrfArea)
         
         try:
-            print 'Floor Area= %.2f Volume= %.2f %s' % (flrArea, zoneVolume, infORventPerAreaRes)
+            print 'Floor Area= %.2f; Volume= %.2f %s' % (flrArea, zoneVolume, infORventPerAreaRes)
         except:
-            print 'Floor Area= %.2f Exposed Surface Area= %.2f %s' % (flrArea, zoneSrfArea, infORventPerAreaRes)
+            print 'Floor Area= %.2f; Exposed Surface Area= %.2f %s' % (flrArea, zoneSrfArea, infORventPerAreaRes)
         
         for srf in HZone.surfaces:
             #srf.type == 2 (floors), == 2.5 (groundFloors), == 2.75 (exposedFloors)
             if int(srf.type) == 2:
                 allFloors.append(srf.geometry)
+        if unit != True:
+            for HBSrf in HZone.surfaces:
+                if HBSrf.BC.lower() == "outdoors":
+                    allExposed.append(HBSrf.geometry)
     
-    return infORventPerArea, allFloors
+    return infORventPerArea, allFloors, allExposed
 
 
 #Honeybee check.
@@ -146,4 +155,4 @@ if _HBZones != [] and _airFlowRate and initCheck == True:
     if checkData == True:
         result = main(hb_hive, _HBZones, _airFlowRate, unit)
         if result != -1:
-            infORventPerArea, allFloors = result
+            infORventPerArea, allFloors, allExposed = result

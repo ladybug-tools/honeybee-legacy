@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -27,7 +27,7 @@ For more information, reference: http://www.solemma.net/references/PLEA2004_Robi
 
 The first time you use this component, you need to be connected to the internet so the component can download GenCumulativeSky.exe to the working directory.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         _weatherFile: epw weather file address on your system
@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Generate Cumulative Sky"
 ghenv.Component.NickName = 'genCumSky'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_29_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"
@@ -82,7 +82,7 @@ def main(weatherFile, analysisPeriod):
             "If you have already updated userObjects drag Ladybug_Ladybug component " + \
             "into canvas and try again."
             w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             return -1
             
         lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -101,13 +101,13 @@ def main(weatherFile, analysisPeriod):
             warning = 'Download failed!!! You need GenCumulativeSky.exe to use this component.' + \
                       '\nPlease check your internet connection, and try again!'
             print warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             return -1
         
     else:
         print "You should first let the Ladybug fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You should first let the Ladybug fly...")
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let the Ladybug fly...")
         return -1
     
     if weatherFile != None and weatherFile[-3:] == 'epw':
@@ -120,7 +120,7 @@ def main(weatherFile, analysisPeriod):
     else:
         print "epwWeatherFile address is not a valid .epw file"
         w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "epwWeatherFile address is not a valid .epw file")
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "epwWeatherFile address is not a valid .epw file")
         return -1
     
     # make new folder for each city
@@ -163,6 +163,6 @@ if _generateSky and _weatherFile!=None:
     if not os.path.isfile(_weatherFile):
         print "Can't find the weather file at: " + _weatherFile
         w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "Can't find the weather file at: " + _weatherFile)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "Can't find the weather file at: " + _weatherFile)
     else:
         skyFilePath = main(_weatherFile, _analysisPeriod_)  
