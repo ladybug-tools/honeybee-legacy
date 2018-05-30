@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_18_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_30_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -6816,7 +6816,7 @@ class hb_EPZoneSurface(hb_EPSurface):
                 # let it go anyways!
                 area = 10 * sc.doc.ModelAbsoluteTolerance
             
-            if  area > sc.doc.ModelAbsoluteTolerance and checkCrvsPts(jGlzCrv):
+            if  abs(area) > sc.doc.ModelAbsoluteTolerance and checkCrvsPts(jGlzCrv):
                 
                 # check normal direction of child surface and base surface
                 # print math.degrees(rc.Geometry.Vector3d.VectorAngle(glzSrf.normalVector, self.normalVector))
