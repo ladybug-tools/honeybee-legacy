@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_24_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUN_04_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -291,7 +291,10 @@ def checkTheInputs():
                     rc.Geometry.Point3d(distFromFloorOrSrf_[0])
                 except:
                     points = [rs.coerce3dpoint(x) for x in distFromFloorOrSrf_]
-                sectionMethod = 2
+                if points[0] is not None:
+                    sectionMethod = 2
+                else:
+                    sectionMethod = 1
             except:
                 sectionMethod = 1
     else: sectionMethod = 0
