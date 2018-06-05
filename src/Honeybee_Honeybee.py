@@ -133,10 +133,10 @@ class CheckIn():
         
         #set up default pass
         if not self.folderIsSetByUser:
-            if os.path.exists("c:\\ladybug\\") and os.access(os.path.dirname("c:\\ladybug\\"), os.X_OK):
+            if os.path.exists("c:\\ladybug\\") and os.access(os.path.dirname("c:\\ladybug\\"), os.F_OK):
                 # folder already exists so it is all fine
                 sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
-            elif os.access(os.path.dirname("c:\\"), os.X_OK):
+            elif os.access(os.path.dirname("c:\\"), os.F_OK):
                 #the folder does not exists but write privileges are given so it is fine
                 sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
             else:
@@ -359,7 +359,7 @@ class hb_findFolders():
                 # if the user has DIVA installed the component may find DIVA version
                 # of RADIANCE and DAYISM which can cause issues because of the different
                 # structure of folders in DIVA
-                return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+                return os.path.isfile(fpath) and os.access(fpath, os.F_OK)
             
             else:
                 return False
