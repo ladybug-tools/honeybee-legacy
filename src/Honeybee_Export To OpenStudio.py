@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_18_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJune_10_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -5185,7 +5185,7 @@ def checkUnits():
     return conversionFactor
 
 
-def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, OSMeasures, runIt, openOpenStudio, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
+def main(HBZones,HVACSystem, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, OSMeasures, runIt, openOpenStudio, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
     # check the release
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -5499,7 +5499,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         measureApplied =  True
     
     # save the model
-    model.save(ops.Path(fname), True)
+    if model.save(ops.Path(fname), True):
+        #Get thermalZone by its name; Remove IdealAirLoad; Add airloop, plantloop, VRF, etc, with their associated objects.
+        if HVACSystem != None: HVACSystem.SaveHVAC(fname)
     print "Model saved to: " + fname
     workingDir, fileName = os.path.split(fname)
     projectName = (".").join(fileName.split(".")[:-1])
@@ -5557,7 +5559,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     return fname, None, None, originalWorkDir, model
 
 if _HBZones and _HBZones[0]!=None and _epwWeatherFile and _writeOSM and openStudioIsReady:
-    results = main(_HBZones, HBContext_, north_, _epwWeatherFile,
+    results = main(_HBZones, HVACSystem_, HBContext_, north_, _epwWeatherFile,
                   _analysisPeriod_, _energySimPar_, simulationOutputs_, OSMeasures_,
                   runSimulation_, openOpenStudio_, workingDir_, fileName_)
     if results!=-1:
