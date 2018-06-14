@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_18_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUN_14_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1910,6 +1910,8 @@ class WriteOPS(object):
                 lowTempRadiant = ops.ZoneHVACLowTempRadiantVarFlow(model, model.alwaysOnDiscreteSchedule(), heatingCoil, coolingCoil)
                 if 'RadiantFloor' in equipList:
                     lowTempRadiant.setRadiantSurfaceType("Floors")
+                else:
+                    lowTempRadiant.setRadiantSurfaceType("AllSurfaces")
                 lowTempRadiant.setHydronicTubingInsideDiameter(0.012)
                 lowTempRadiant.setTemperatureControlType("MeanRadiantTemperature")
                 lowTempRadiant.addToThermalZone(zone)
