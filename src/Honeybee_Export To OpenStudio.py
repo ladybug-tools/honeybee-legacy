@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nJUN_14_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUN_22_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2138,14 +2138,12 @@ class WriteOPS(object):
         minVentSch = self.getOSSchedule(HBZone.ventilationSched,model)
         vavBox.setMinimumAirFlowFractionSchedule(minVentSch)
     
-    def addDehumidController(self, model, airloop):
+    def addDehumidController(self, model, airloop, setPNode=None):
         # Add a humidity set point controller into the air loop.
+        if setPNode == None:
+            setPNode = airloop.supplyOutletNode()
         humidController = ops.SetpointManagerMultiZoneHumidityMaximum(model)
         humidController.setMinimumSetpointHumidityRatio(0.001)
-        setPNode = airloop.supplyOutletNode()
-        # I should be using the controller sensor node but trying to call it causes Rhino to crash.
-        #For now, I am just using the supply outlet node, which works well aside from a warning that E+ gives us.
-        #setPNode = ccontroller.sensorNode().get()
         humidController.addToNode(setPNode)
         return setPNode
     
@@ -3134,25 +3132,22 @@ class WriteOPS(object):
                     elif systemIndex == 12:
                         airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None, "ChilledBeam")
                     elif systemIndex == 13 or systemIndex == 14 or systemIndex == 15:
-                        if chillType != "GroundSourced" or systemIndex == 15 or dehumidTrigger == True:
+                        if chillType != "GroundSourced" or systemIndex == 15 or (dehumidTrigger == True and not ((systemIndex == 13 or systemIndex == 14) and chillType == "GroundSourced")):
                             hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 67, model)
                             hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
                         if systemIndex == 13  or systemIndex == 14:
-                            if dehumidTrigger == True:
-                                coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 6.7, model)
-                                coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
-                                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
+                            if chillType != "GroundSourced":
+                                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl)
                             else:
-                                if chillType != "GroundSourced":
-                                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl)
-                                else:
-                                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
+                                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
                         else:
                             airLoop = self.createPrimaryAirLoop('VAV', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, cwl)
                     
                     # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
-                    if dehumidTrigger == True:
+                    if dehumidTrigger == True and not ((systemIndex == 13 or systemIndex == 14) and chillType == "GroundSourced"):
                         self.addChilledWaterDehumid(model, airLoop)
+                    elif dehumidTrigger == True and (systemIndex == 13 or systemIndex == 14) and chillType == "GroundSourced":
+                        self.addHeatPumpCoilDehumid(model, airLoop)
                     # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
                     if humidTrigger == True:
                         self.addElectricHumidifier(model, airLoop)
