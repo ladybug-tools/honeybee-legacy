@@ -3136,8 +3136,12 @@ class WriteOPS(object):
                             hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 67, model)
                             hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
                         if systemIndex == 13  or systemIndex == 14:
-                            if chillType != "GroundSourced":
+                            if chillType != "GroundSourced" and dehumidTrigger == False:
                                 airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl)
+                            elif chillType != "GroundSourced" and dehumidTrigger == True:
+                                coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 6.7, model)
+                                coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
+                                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
                             else:
                                 airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
                         else:
