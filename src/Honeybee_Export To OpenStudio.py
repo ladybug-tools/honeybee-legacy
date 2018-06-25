@@ -904,7 +904,7 @@ class WriteOPS(object):
         fan.setMotorInAirstreamFraction(1.0)
         return fan
     
-    def createDefaultGroundSourceChiller(self, model, coolingDetails, HVACCount):
+    def createDefaultGroundSourceChiller(self, model, coolingDetails, HVACCount, heatingDetails):
         # cooling
         # create clgCapFuncTempCurve
         clgCapFuncTempCurve = ops.CurveBiquadratic(model)
@@ -1005,6 +1005,8 @@ class WriteOPS(object):
         # https://github.com/NREL/EnergyPlus/issues/6445
         if coolingDetails != None and coolingDetails.coolHardSize != 'Autosize':
             chiller1.setReferenceCoolingModeEvaporatorCapacity(float(coolingDetails.coolHardSize))
+        if heatingDetails != None and heatingDetails.heatHardSize != 'Autosize':
+            chiller1.setReferenceHeatingModeCoolingCapacityRatio(float(heatingDetails.heatHardSize) / float(str(chiller1.referenceCoolingModeEvaporatorCapacity())))
         
         # set the properties of the chiller/heater
         if coolingDetails != None and coolingDetails.coolingCOP != 'Default':
@@ -1019,6 +1021,7 @@ class WriteOPS(object):
         # create the two modules
         centralPumpModule1 = ops.CentralHeatPumpSystemModule(model)
         centralPumpModule1.setChillerHeaterModulesPerformanceComponent(chiller1)
+        centralPumpModule1.setNumberofChillerHeaterModules(2)
         
         # construct the system
         centralPumpSystem = ops.CentralHeatPumpSystem(model)
@@ -1185,7 +1188,7 @@ class WriteOPS(object):
         # pass back hot water plant
         return hotWaterPlant
     
-    def createChilledWaterPlant(self, model, chilledWaterSetpointSchedule, coolingDetails, HVACCount, chillerType, radLoop = False):
+    def createChilledWaterPlant(self, model, chilledWaterSetpointSchedule, coolingDetails, HVACCount, chillerType, radLoop=False, heatingDetails=None):
         chilleWaterPlant = ops.PlantLoop(model)
         if radLoop == True:
             chilleWaterPlant.setName("Chilled Water Radiant Loop" + str(HVACCount))
@@ -1209,7 +1212,7 @@ class WriteOPS(object):
         elif chillerType == "AirCooled":
             chiller = self.createDefaultAEDGAirChiller(model, coolingDetails)
         elif chillerType == "GroundSourced":
-            chiller = self.createDefaultGroundSourceChiller(model, coolingDetails, HVACCount)
+            chiller = self.createDefaultGroundSourceChiller(model, coolingDetails, HVACCount, heatingDetails)
         
         # create a scheduled setpoint manager
         setpointManagerScheduled = ops.SetpointManagerScheduled(model, chilledWaterSetpointSchedule)
@@ -2830,7 +2833,7 @@ class WriteOPS(object):
                         centralCool = cwl
                 
                 if (coolingDetails != None and coolingDetails.chillerType == "GroundSourced"):
-                    centHeatPump = self.createDefaultGroundSourceChiller(model, coolingDetails, HVACCount)
+                    centHeatPump = self.createDefaultGroundSourceChiller(model, coolingDetails, HVACCount, heatingDetails)
                     x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
                     cc = model.getCoilCoolingWater(x[0].handle()).get()
                     cwl = cc.plantLoop().get()
@@ -3102,7 +3105,10 @@ class WriteOPS(object):
                 if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool != None:
                     cwl = centralCool
                 else:
-                    cwl = self.createChilledWaterPlant(model, coolLoopTemp, coolingDetails, HVACCount, chillType, radLoop)
+                    if chillType != "GroundSourced":
+                        cwl = self.createChilledWaterPlant(model, coolLoopTemp, coolingDetails, HVACCount, chillType, radLoop)
+                    else:
+                        cwl = self.createChilledWaterPlant(model, coolLoopTemp, coolingDetails, HVACCount, chillType, radLoop, heatingDetails)
                 if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool == None:
                     centralCool = cwl
                 
