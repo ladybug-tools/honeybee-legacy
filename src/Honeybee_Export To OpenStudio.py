@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nJUN_22_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUN_27_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2845,7 +2845,7 @@ class WriteOPS(object):
                     hwl = hc.plantLoop().get()
                     # remove boiler and add heat pump.
                     self.replaceBoilerWithHeatPump(model, hwl, cwl, HVACCount)
-                    self.updateLoopSupplyTemp(hwl, model, 55, "Hot_Water_Temperature_Default", "Hot_Water_Temp", HVACCount)
+                    self.updateLoopSupplyTemp(hwl, model, 45, "Hot_Water_Temperature_Default", "Hot_Water_Temp", HVACCount)
                 elif (coolingDetails != None and coolingDetails.chillerType == "AirCooled"):
                     airChill = self.createDefaultAEDGAirChiller(model, coolingDetails, HVACCount)
                     x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
@@ -3072,7 +3072,7 @@ class WriteOPS(object):
                     if systemIndex == 13 or systemIndex == 14 or systemIndex == 15:
                         suppTemp = 40
                     elif chillType == "GroundSourced":
-                        suppTemp = 55
+                        suppTemp = 45
                     else:
                         suppTemp = 67
                 radLoop = False
