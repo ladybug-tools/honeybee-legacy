@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUN_29_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
@@ -351,11 +351,11 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
                     
                 errMsg += line + "\n"
             
-            if errMsg != "":
-                errMsg = "Failed to read the results!\n" + errMsg
+            if errMsg != "": 
                 print errMsg
-                raise Exception(errMsg)
-            
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, errMsg)
+                
             if warnMsg != "":
                 print warnMsg
                 w = gh.GH_RuntimeMessageLevel.Warning
