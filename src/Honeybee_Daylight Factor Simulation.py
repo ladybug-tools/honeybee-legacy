@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Daylight Factor Simulation"
 ghenv.Component.NickName = 'daylighFactorSimulation'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUN_29_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
@@ -54,10 +54,10 @@ import os
 def genDFSky(illuminanceValue = 1000, skyType = "-c"):
 
     def RADDaylightingSky(illuminanceValue, skyType):
-        # gensky 12 4 +12:00 -c -B 55.866 > skies/sky_10klx.mat
+        # gensky 3 21 +12:00 -c -B 55.866 > skies/sky_10klx.mat
         return  "# start of sky definition for daylighting studies\n" + \
                 "# horizontal sky illuminance: " + `illuminanceValue` + " lux\n" + \
-                "!gensky 12 6 12:00 " + skyType + " -B " +  '%.3f'%(illuminanceValue/179) + "\n" + \
+                "!gensky 3 21 +12 " + skyType + " -B " +  '%.3f'%(illuminanceValue/179) + "\n" + \
                 "skyfunc glow sky_mat\n" + \
                 "0\n" + \
                 "0\n" + \
@@ -67,10 +67,8 @@ def genDFSky(illuminanceValue = 1000, skyType = "-c"):
                 "0\n" + \
                 "0\n" + \
                 "4\n" + \
-                "0 0 1 180\n"
-        
-        # For now I removed the ground. I should check what is the standard sky for LEED
-        ground ="skyfunc glow ground_glow\n" + \
+                "0 0 1 180\n\n" + \
+                "skyfunc glow ground_glow\n" + \
                 "0\n" + \
                 "0\n" + \
                 "4\n" + \
