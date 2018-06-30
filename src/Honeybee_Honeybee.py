@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nJUN_02_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUN_29_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -1127,16 +1127,16 @@ class RADMaterialAux(object):
         Returns:
             A list of strings. Each string represents a differnt Rdiance Object
         """
+
         raw_rad_objects = re.findall(
             r'^\s*([^0-9].*(\s*[\d|.]+.*)*)',
             radFileString,
             re.MULTILINE)
-    
+
         radObjects = (' '.join(radiance_object[0].split())
                       for radiance_object in raw_rad_objects)
 
         radObjects = tuple(obj for obj in radObjects if obj and obj[0] != '#')
-        
         return radObjects
     
     def getRadianceObjectsFromFile(self, radFilePath):
@@ -1438,17 +1438,15 @@ class hb_MSHToRAD(object):
                 pass
         else:
             self.matName = "radMaterial"
-            
             if radMaterial != None:
                 radMaterial = RADMaterialAux.getRadianceObjectsFromString(radMaterial)[0]
-                
                 try:
                     self.matName = radMaterial.split("\n")[0].split(" ")[-1].rstrip()
                     assert self.matName != ""
                 except:
                     raise Exception("Failed to import %s. Double check the material definition."%radMaterial)
-                
-        self.RADMaterial = radMaterial
+
+        self.RADMaterial = " ".join(radMaterial.split())
         
     def meshToObj(self):
         objFilePath = os.path.join(self.workingDir, self.name + ".obj")
@@ -1551,13 +1549,13 @@ class hb_MSHToRAD(object):
         matFile = os.path.join(path, "material_" + fileName)
         
         try:
-            materialType = self.RADMaterial.split("\n")[0].split(" ")[1]
-            materialTale = "\n".join(self.RADMaterial.split("\n")[1:])
+            materialType = self.RADMaterial.split()[1]
+            materialTale = " ".join(self.RADMaterial.split()[3:])
         except Exception, e:
             # to be added here: if material is not full string then get it from the library
-            print "material error..." + `e`
-            return        
-        
+            errmsg = "Failed to parse material:\n%s" % e
+            print errmsg
+            raise ValueError(errmsg)
         # create material file
         if self.pattern != None:
             
@@ -1578,7 +1576,7 @@ class hb_MSHToRAD(object):
                   patternName + "_pattern " + materialType + " " + patternName + "\n" + \
                   materialTale
         else:
-            materialStr = "void "  + materialType + " " + self.matName + "\n" + \
+            materialStr = "void "  + materialType + " " + self.matName + " " +  \
                   materialTale  
                   
         # write material to file
