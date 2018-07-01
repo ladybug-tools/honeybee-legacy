@@ -96,6 +96,7 @@ import operator
 import collections
 import platform
 
+
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 assert platform.architecture()[0] == '64bit', \
@@ -4657,6 +4658,11 @@ class OPSmeasures(object):
             pass
         shutil.copy(runDir+"pre-preprocess.idf", idfFilePath)
         return idfFolder, idfFilePath
+    
+    def runCmd(self, batchFileAddress, shellKey = True):
+        batchFileAddress.replace("\\", "/")
+        p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
+        out, err = p.communicate()
 
 
 
