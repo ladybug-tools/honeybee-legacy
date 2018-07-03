@@ -53,7 +53,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUL_03_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -66,6 +66,7 @@ import os
 import shutil
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
+import subprocess
 
 if sc.sticky.has_key('honeybee_release'):
     if sc.sticky["honeybee_folders"]["OSLibPath"] != None:
@@ -130,14 +131,14 @@ def writeBatchFile(workingDir, idfFileName, epwFileAddress, runInBackground = Fa
     
     #execute the batch file
     if runInBackground:
-        self.runCmd(batchFileAddress)
+        runCmd(batchFileAddress)
     else:
         os.system(batchFileAddress)
     
     return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv", fullPath+".rdd", fullPath+".eio", fullPath+"Table.html"
 
 
-def runCmd(self, batchFileAddress, shellKey = True):
+def runCmd(batchFileAddress, shellKey = True):
     batchFileAddress.replace("\\", "/")
     p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
     out, err = p.communicate()
@@ -219,7 +220,7 @@ def main(runIt, epwFile, OSMeasures, osmFile, hb_OpenStudioMeasure):
     
     # Apply the measures.
     if runIt == 2:
-        self.runCmd(batchFileAddress)
+        runCmd(batchFileAddress)
     else:
         os.system(batchFileAddress)
     
