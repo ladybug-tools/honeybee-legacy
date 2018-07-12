@@ -57,7 +57,7 @@ from shutil import copyfile
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.63\nFEB_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUL_11_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -275,8 +275,11 @@ def checkTheInputs():
         # Check to be sure that the polyline geomtry is clockwise in the base plane.
         if str(polygon.polylineGeo.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
             polygon.polylineGeo.Reverse()
-        if str(rc.RhinoApp.Version).startswith('6'):
-            polygon.polylineGeo.Reverse()
+        try:
+            if str(rc.RhinoApp.Version).startswith('6'):
+                polygon.polylineGeo.Reverse()
+        except:
+            pass
         # Remake the list of vertices so that we are sure they are oriented clockwise.
         polygon.vertices = []
         for segment in polygon.polylineGeo.DuplicateSegments():
@@ -336,8 +339,11 @@ def checkTheInputs():
         encircling = allBoundary[0]
     if str(encircling.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
         encircling.Reverse()
-    if str(rc.RhinoApp.Version).startswith('6'):
-        encircling.Reverse()
+    try:
+        if str(rc.RhinoApp.Version).startswith('6'):
+            encircling.Reverse()
+    except:
+        pass
     polygonBoundaries = encircling.DuplicateSegments()
     
     # Get the centroid of all geometry
