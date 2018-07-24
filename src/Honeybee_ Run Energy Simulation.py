@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_14_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUL_24_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -106,7 +106,7 @@ class WriteIDF(object):
         if input:
             return 'Yes'
         else:
-            return 'False'
+            return 'No'
 
     def __init__(self, workingDir):
         self.fileBasedSchedules = {}
