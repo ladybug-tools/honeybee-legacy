@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_infORventPerArea Calculator"
 ghenv.Component.NickName = 'ACH2m3/s-m2 Calculator'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_03_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUL_26_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -98,6 +98,8 @@ def main(hb_hive, HBZones, airFlowRate, unit):
             standardFlowRate = standardFlowRate/(math.pow((_blowerPressure_/4),0.63))
         
         # Calculate infiltration/ventilation per area (m3/s-m2).
+        warning= None
+        infORventPerAreaRes = ''
         try:
             infORventPerArea.append(standardFlowRate / flrArea)
         except:
@@ -106,10 +108,11 @@ def main(hb_hive, HBZones, airFlowRate, unit):
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
             infORventPerArea.append(HZone.ventilationPerArea)
-        if unit == True:
-            infORventPerAreaRes = '; Flowrate %.3f ACH' % ((standardFlowRate * 3600)/ zoneVolume)
-        else:
-            infORventPerAreaRes = '; Flowrate Per Exposed Surface Area %.6f m3/second-m2' % (standardFlowRate/zoneSrfArea)
+        if warning != None:
+            if unit == True:
+                infORventPerAreaRes = '; Flowrate %.3f ACH' % ((standardFlowRate * 3600)/ zoneVolume)
+            else:
+                infORventPerAreaRes = '; Flowrate Per Exposed Surface Area %.6f m3/second-m2' % (standardFlowRate/zoneSrfArea)
         
         try:
             print 'Floor Area= %.2f; Volume= %.2f %s' % (flrArea, zoneVolume, infORventPerAreaRes)
