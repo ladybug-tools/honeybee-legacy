@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Chris Mackey <Chris@MackeyArchitecture.com.com> 
+# Copyright (c) 2013-2018, Chris Mackey <Chris@MackeyArchitecture.com.com> and Ed May <ed@bldgtyp.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
