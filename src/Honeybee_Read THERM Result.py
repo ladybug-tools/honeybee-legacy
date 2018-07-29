@@ -39,7 +39,11 @@ Provided by Honeybee 0.0.63
         runIt_: Set boolean to "True" to run the component and import THERM results to Rhino/GH.
     Returns:
         readMe!: ...
-        meshValues: The numerical meshValues of the results in either degrees C or W/m2 (depending on the dataYpe_ input of this component).
+        uFactorTags: The names of each of the uFactor tags (including information about projections for each of the tags).
+        uFactors: The U-Factors accross each boundary condition that has been definted with a uFactorTag. This will be in W/m2-K if SIorIP is set to 'True'  or in BTU/h-ft2-F if set to 'False.'
+        uFactorLength: The lengths of the boundary condition defined by the U-Factor tags.  This will be in mm if SIorIP is set to 'True'  or in inches if set to 'False.'
+        deltaT: The temperature delta across each of the uFactor tags.
+        meshValues: The numerical meshValues of the results in either degrees C or W/m2 (depending on the dataType_ input of this component).
         meshPoints: The meshPoints of the mesh that THERM has generated.
         coloredMesh: A mesh of the original THERM geometry that is colored with the results.
         legend: A legend for the coloredMesh above. Connect this output to a grasshopper "Geo" component in order to preview this legend separately in the Rhino scene.  
@@ -53,11 +57,14 @@ import scriptcontext as sc
 import os
 import System
 import Grasshopper.Kernel as gh
+from System import Object
+from Grasshopper import DataTree
+from Grasshopper.Kernel.Data import GH_Path
 import math
 
 ghenv.Component.Name = 'Honeybee_Read THERM Result'
 ghenv.Component.NickName = 'readTHERM'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUL_29_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -98,6 +105,12 @@ def extractTransform(thmxFile):
     
     return planeReorientation, rhinoOrig
 
+def matrixToDataTree(matrix):
+    dataTree = DataTree[Object]()
+    for i, x in enumerate(matrix):
+        for data in x:
+            dataTree.Add(data, GH_Path(i))
+    return dataTree
 
 def checkTheInputs():
     lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -128,8 +141,11 @@ def checkTheInputs():
         ghenv.Component.AddRuntimeMessage(w, warning)
     
     #If there is a uFactorFile_ connected, check to make sure it exists and contains the U-Factor data.
+    tagNum = -1
     uFactorNames = []
     uFactors = []
+    uFactorLength = []
+    deltaT = []
     if uFactorFile_ != None:
         if not os.path.isfile(uFactorFile_):
             warning = "Cannot find the U-Factor file. Make sure that you have saved your THERM file after simulating it to ensure that this file is generated. \n Also, Before you run the file in THERM, make sure that you go to Options > Preferences > Preferences and check 'Automatic XML Export on Save' in order to enure that your THERM simulation writes this uFactorFile. \n No values will be output from the uFactors or uFactorTags."
@@ -144,19 +160,35 @@ def checkTheInputs():
                 if '<Tag>' in line and '</Tag>' in line:
                     tagTrigger = True
                     tagName = line.split('<Tag>')[-1].split('</Tag>')[0]
-                elif '</U-factors>' in line: tagTrigger = False
+                    uFactorNames.append([])
+                    uFactors.append([])
+                    uFactorLength.append([])
+                    deltaT.append([])
+                    tagNum += 1
+                elif '</U-factors>' in line:
+                    tagTrigger = False
                 elif tagTrigger == True:
+                    if '<DeltaT units' in line:
+                        deltaTVal = float(line.split('value="')[-1].split('value=')[0].split('" />')[0])
+                        if SIorIP_ == False:
+                            deltaTVal = deltaTVal * (9/5)
+                        deltaT[tagNum].append(deltaTVal)
                     if '<Length-type>' in line:
                         lengthStr = line.split('<Length-type>')[-1].split('</Length-type>')[0]
-                        uFactorNames.append(tagName + ' - ' + lengthStr)
+                        uFactorNames[tagNum].append(tagName + ' - ' + lengthStr)
+                    if '<Length units' in line:                                
+                        lengthVal = float(line.split('value="')[-1].split('value=')[0].split('" />')[0])
+                        if SIorIP_ == False:
+                            lengthVal = lengthVal / 25.4
+                        uFactorLength[tagNum].append(lengthVal)
                     if '<U-factor value="NA" />' in line:
-                        del uFactorNames[-1]
+                        uFactors[tagNum].append("NaN")
                     if '<U-factor units="W/m2-K" value="' in line:
                         uFactor = float(line.split('<U-factor units="W/m2-K" value="')[-1].split('" />')[0])
-                        uFactors.append(uFactor)
+                        if SIorIP_ == False:
+                            uFactor = uFactor/5.678
+                        uFactors[tagNum].append(uFactor)
             uFacFile.close()
-        if SIorIP_ == False:
-            for count, val in enumerate(uFactors): uFactors[count] = val/5.678
     
     #If there is an input for dataType_, check to make sure that it makes sense.
     dataType = 0
@@ -168,7 +200,7 @@ def checkTheInputs():
             ghenv.Component.AddRuntimeMessage(e, warning)
             return -1
     
-    return dataType, planeReorientation, unitsScale, rhinoOrig, uFactorNames, uFactors
+    return dataType, planeReorientation, unitsScale, rhinoOrig, uFactorNames, uFactors, uFactorLength, deltaT
 
 
 def main(dataType, planeReorientation, unitsScale, rhinoOrig):
@@ -362,11 +394,15 @@ else:
 if initCheck and _resultFile and _runIt:
     initInputs = checkTheInputs()
     if initInputs != -1:
-        dataType, planeReorientation, unitsScale, rhinoOrig, uFactorTags, uFactors = initInputs
+        dataType, planeReorientation, unitsScale, rhinoOrig, uFactorTagsInit, uFactorsInit, uFactorLengthInit, deltaTInit = initInputs
+        uFactorTags = matrixToDataTree(uFactorTagsInit)
+        uFactors = matrixToDataTree(uFactorsInit)
+        uFactorLength = matrixToDataTree(uFactorLengthInit)
+        deltaT = matrixToDataTree(deltaTInit)
         result = main(dataType, planeReorientation, unitsScale, rhinoOrig)
         if result != -1:
             meshValues, meshPoints, coloredMesh, legend, legendBasePt, title, titleBasePt = result
 
-ghenv.Component.Params.Output[4].Hidden = True
+ghenv.Component.Params.Output[5].Hidden = True
 ghenv.Component.Params.Output[8].Hidden = True
 ghenv.Component.Params.Output[10].Hidden = True

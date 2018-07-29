@@ -57,7 +57,7 @@ from shutil import copyfile
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.63\nJUL_11_2018'
+ghenv.Component.Message = 'VER 0.0.63\nJUL_29_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -591,7 +591,10 @@ def replaceHeader(xmlFilePath, uFactorFile):
                     else:
                         newFile.write(line)
     os.close(fh)
-    os.remove(uFactorFile)
+    try:
+        os.remove(uFactorFile)
+    except:
+        pass
     move(absPath, uFactorFile)
     
     return None
