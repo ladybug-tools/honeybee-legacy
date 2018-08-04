@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nJUL_01_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAUG_04_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -95,7 +95,6 @@ import subprocess
 import operator
 import collections
 import platform
-
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
@@ -2231,6 +2230,12 @@ class WriteOPS(object):
         onceTrhoughSched = self.createConstantScheduleRuleset('OnceThroughAir', 'OnceThroughAirSched', 'FRACTION', 1, model)
         oactrl.setMinimumFractionofOutdoorAirSchedule(onceTrhoughSched)
     
+    def setSizingForRecirc(self, airloop):
+        # set the sizing on the system to not use 100% outdoor air
+        sizingSystem = airloop.sizingSystem()
+        sizingSystem.setAllOutdoorAirinCooling(False)
+        sizingSystem.setAllOutdoorAirinHeating(False)
+    
     def addDefaultAirsideEcon(self, airloop, dehumidTrigger):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
         oactrl = oasys.get().getControllerOutdoorAir()
@@ -2624,6 +2629,7 @@ class WriteOPS(object):
                 # 3: Packaged Single Zone - AC
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType3(model).handle()
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
+                self.setSizingForRecirc(airloop)
                 humidTrigg = False
                 for zoneCount, zone in enumerate(thermalZoneVector):
                     airloop.addBranchForZone(zone)
@@ -2657,6 +2663,7 @@ class WriteOPS(object):
                 # 4: Packaged Single Zone - HP
                 handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
                 airloop = model.getAirLoopHVAC(handle).get()
+                self.setSizingForRecirc(airloop)
                 humidTrigg = False
                 for zoneCount, zone in enumerate(thermalZoneVector):
                     airloop.addBranchForZone(zone)
@@ -2699,6 +2706,7 @@ class WriteOPS(object):
                         hc = model.getCoilHeatingWater(x[0].handle()).get()
                         hwl = hc.plantLoop().get()
                         centralHeat = hwl
+                self.setSizingForRecirc(airloop)
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -2760,6 +2768,7 @@ class WriteOPS(object):
                 # 6: Packaged VAV w/ PFP Boxes
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType6(model).handle()
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
+                self.setSizingForRecirc(airloop)
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -2832,6 +2841,7 @@ class WriteOPS(object):
                         cc = model.getCoilCoolingWater(x[0].handle()).get()
                         cwl = cc.plantLoop().get()
                         centralCool = cwl
+                self.setSizingForRecirc(airloop)
                 
                 if (coolingDetails != None and coolingDetails.chillerType == "GroundSourced"):
                     centHeatPump = self.createDefaultGroundSourceChiller(model, coolingDetails, HVACCount, heatingDetails)
@@ -2924,6 +2934,7 @@ class WriteOPS(object):
                         cc = model.getCoilCoolingWater(x[0].handle()).get()
                         cwl = cc.plantLoop().get()
                         centralCool = cwl
+                self.setSizingForRecirc(airloop)
                 
                 if (coolingDetails != None and coolingDetails.chillerType == "GroundSourced"):
                     warning = "VAV w/ PFP Boxes cannot be ground sourced. \n Defaulting to a water cooled chiller."
