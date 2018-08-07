@@ -3252,7 +3252,7 @@ class WriteOPS(object):
                 if dehumidTrigger == True:
                     if systemIndex == 17 or systemIndex == 18:
                         self.addHeatPumpCoilDehumid(model, airLoop)
-                    elif systemIndex == 16 and coolingDetails != None and coolingDetails.chillerType != 'WaterCooled':
+                    elif systemIndex == 16 and coolingDetails != None and coolingDetails.chillerType == 'GroundSourced':
                         self.addHeatPumpCoilDehumid(model, airLoop)
                     else:
                         pass
