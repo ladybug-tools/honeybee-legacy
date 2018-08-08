@@ -12,7 +12,7 @@ Constructions, schedules and systems will be neglected
 """
 ghenv.Component.Name = "Honeybee_Import idf"
 ghenv.Component.NickName = 'importIdf'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAUG_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -394,15 +394,14 @@ def main(idfFile, importEPObjects = False):
             srfType = 5
             EPConstruction = windowObject[1][0]
             parentSrfName = windowObject[2][0]
-            viewFactor = windowObject[3][0]
-            shadingControlName = windowObject[4][0]
-            frameName = windowObject[5][0]
+            shadingControlName = windowObject[3][0]
+            frameName = windowObject[4][0]
             numOfVertices = 4
-            multiplier = windowObject[7][0]
-            xCoor = float(windowObject[8][0])
-            zCoor = float(windowObject[9][0])
-            length = float(windowObject[10][0])
-            height = float(windowObject[11][0])
+            multiplier = windowObject[5][0]
+            xCoor = float(windowObject[6][0])
+            zCoor = float(windowObject[7][0])
+            length = float(windowObject[8][0])
+            height = float(windowObject[9][0])
 
             # let the user know that we don't support shading control right now and we are sorry
             if shadingControlName.strip()!="":
