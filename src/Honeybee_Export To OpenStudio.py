@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nAUG_04_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAUG_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3938,11 +3938,11 @@ class WriteOPS(object):
             material.setDensity(float(values[3]))
         if values[4] != '':
             material.setSpecificHeat(float(values[4]))
-        if values[5] != '':
+        if len(values) > 6 and values[5] != '':
             material.setThermalAbsorptance(float(values[5]))
-        if values[6] != '':
+        if len(values) > 7 and values[6] != '':
             material.setSolarAbsorptance(float(values[6]))
-        if values[7] != '':
+        if len(values) > 8 and values[7] != '':
             material.setVisibleAbsorptance(float(values[7]))
         
         return material
@@ -4011,12 +4011,15 @@ class WriteOPS(object):
         nomassMaterial.setName(HBMaterialName)
         
         roughness = values[0]
-        thermalResistance, thermalAbsorptance, solarAbsorptance, visibleAbsorptance = map(float, values[1:])
+        thermalResistance = values[1]
         nomassMaterial.setRoughness(roughness)
-        nomassMaterial.setThermalResistance(thermalResistance)
-        nomassMaterial.setThermalAbsorptance(thermalAbsorptance)
-        nomassMaterial.setSolarAbsorptance(solarAbsorptance)
-        nomassMaterial.setVisibleAbsorptance(visibleAbsorptance)
+        nomassMaterial.setThermalResistance(float(thermalResistance))
+        
+        if len(values) == 5:
+            thermalAbsorptance, solarAbsorptance, visibleAbsorptance = map(float, values[2:])
+            nomassMaterial.setThermalAbsorptance(thermalAbsorptance)
+            nomassMaterial.setSolarAbsorptance(solarAbsorptance)
+            nomassMaterial.setVisibleAbsorptance(visibleAbsorptance)
         
         return nomassMaterial
     
