@@ -46,7 +46,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Import THERM XML'
 ghenv.Component.NickName = 'importTHERM'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAUG_21_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -144,7 +144,7 @@ def main(thermXMLFile):
                 print warning
         
         #Extract the materials from the file header.
-        elif materialsTrigger == True:
+        elif materialsTrigger == True and not '<Property' in line and not '	</Material>' in line:
             materialStr = line.strip().replace('"', '')
             materialName = copy.copy(materialStr).split('Material Name=')[-1].split(' Type=')[0]
             if materialName.upper() not in sc.sticky["honeybee_thermMaterialLib"].keys():

@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nJUN_29_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAUG_21_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7897,15 +7897,25 @@ class thermDefaults(object):
         #Parse the string.
         type = int(materialString.split('Type=')[-1].split(' ')[0])
         conductivity = float(materialString.split('Conductivity=')[-1].split(' ')[0])
-        absorptivity = float(materialString.split('Absorptivity=')[-1].split(' ')[0])
-        emissivity = float(materialString.split('Emissivity=')[-1].split(' ')[0])
+        try:
+            absorptivity = float(materialString.split('Absorptivity=')[-1].split(' ')[0])
+        except:
+            absorptivity = 0.5
+        try:
+            emissivity = float(materialString.split('Emissivity=')[-1].split(' ')[0])
+        except:
+            emissivity = float(materialString.split('EmissivityFront=')[-1].split(' ')[0])
         try:
             RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split('/>')[0])
             sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = "0.0"
         except:
-            RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split(' ')[0])
-            CavityModel = int(materialString.split('CavityModel=')[-1].split('/>')[0])
-            sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = "-1.0"
+            try:
+                RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split(' ')[0])
+                CavityModel = int(materialString.split('CavityModel=')[-1].split('/>')[0])
+                sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = "-1.0"
+            except:
+                RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split('>')[0])
+            sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = "0.0"
         
         #Create the material with values from the original material.
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = materialName
