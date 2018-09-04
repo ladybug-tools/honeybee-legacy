@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nAUG_08_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_03_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -148,8 +148,12 @@ class WriteOPS(object):
         self.hb_EPPar = sc.sticky["honeybee_EPParameters"]()
         self.simParameters = self.hb_EPPar.readEPParams(EPParameters)
         
-        if self.simParameters[4] != None: self.ddyFile = self.simParameters[4]
-        else: self.ddyFile = weatherFilePath.replace(".epw", ".ddy", 1)
+        if self.simParameters[4] != None:
+            self.ddyFile = self.simParameters[4]
+            self.customddy = True
+        else:
+            self.ddyFile = weatherFilePath.replace(".epw", ".ddy", 1)
+            self.customddy = False
         
         self.constructionList = {}
         self.materialList = {}
@@ -349,6 +353,9 @@ class WriteOPS(object):
             designDayVector = ddyModel.getDesignDays()
             selectedDesignDays = ops.WorkspaceObjectVector()
             for dday in designDayVector:
+                if self.customddy == True:
+                    selectedDesignDays.Add(dday)
+                    ddFound = True
                 if dday.name().get().find(".4%")> -1 or dday.name().get().find("99.6%") > -1:
                     selectedDesignDays.Add(dday)
                     ddFound = True
