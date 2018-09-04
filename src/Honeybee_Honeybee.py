@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nAUG_21_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_04_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -2209,9 +2209,10 @@ class hb_WriteRAD(object):
                 view = sc.doc.Views.ActiveView.ActiveViewport.Name
                 
                 viewLine = self.hb_writeRADAUX.exportView(view, analysisRecipe.radParameters, analysisRecipe.cameraType, imageSize = [64, 64])
-                        
                 # write rpict lines
                 overtureLine = self.hb_writeRADAUX.overtureLine(viewLine, OCTFileName, view, analysisRecipe.radParameters, int(analysisRecipe.type))
+                originalView = str(viewLine).strip()
+                
                 if runOverture: batchFile.write(overtureLine)
             
         if analysisRecipe.type == 0:
@@ -2290,10 +2291,11 @@ class hb_WriteRAD(object):
                         
                         pcompFile.write(pcomposLine)
                     
-                        pfiltLine = "pfilt -r .6 -x /2 -y /2 {} > {}\n" \
-                            .format(mergedName.replace('.HDR', '_temp.HDR'), mergedName)
+                        pfiltLine = 'pfilt -r .6 -x /2 -y /2 {} | getinfo -a "VIEW= {}" > {}\n' \
+                            .format(mergedName.replace('.HDR', '_temp.HDR'), originalView, mergedName)
+                        # add original view
                         pcompFile.write(pfiltLine)
-            
+
             return initBatchFileName, batchFiles, fileNames, pcompFileName, HDRFileAddress
                         
         else:
