@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_03_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | Developers"
@@ -69,7 +69,10 @@ def removeCurrentHB():
                 continue
             elif fileName.StartsWith('Honeybee'):
                 fullPath = os.path.join(folder, fileName)
-                os.remove(fullPath)
+                try:
+                    os.remove(fullPath)
+                except:
+                    'Failed to remove older user objects. New ones will be overwritten but you may have some deprecated components remaining.'
 
 def downloadSourceAndUnzip(lb_preparation):
     """
