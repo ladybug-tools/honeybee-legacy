@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_03_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_11_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -186,6 +186,7 @@ class WriteOPS(object):
         self.windowSpectralDatasets = {}
         
         self.waterSourceVRFs = {}
+        self.generatorCosts = []
     
     def setSimulationControls(self, model):
         solarDist = self.simParameters[2]
@@ -3698,11 +3699,13 @@ class WriteOPS(object):
         # This code here is used to extractingruntime periods if outputs are specified externally
         # If the function returns and exception that means that external outputs are not specified.
         # and teh default below will be used.
-        
+        timePeriods = ['hourly', 'daily', 'monthly', 'annual']
         def extracttimeperiod(simulationOutputs):
             try:
-                timeperiod = simulationOutputs[-1].split(',')[-1]
-                HBgeneratortimeperiod = timeperiod.replace(";","")
+                for output in simulationOutputs:
+                    endWord = output.split(',')[-1].strip().replace(";","")
+                    if endWord in timePeriods:
+                        HBgeneratortimeperiod = endWord
                 return HBgeneratortimeperiod
             except:
                 # By default return hourly if no simulation outputs are returned
@@ -3710,15 +3713,13 @@ class WriteOPS(object):
         
         # Extract the timestep from the incoming component simulationOutputs if its being used
         HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
-        
         HBgeneratoroutputs = []
         
         # 1. Ensure the correct simulation outputs for the electric generators
         if simulationOutputs == []:
-
             HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
             HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
-            
+        
         # 2. Add default PV outputs
         HBgeneratoroutputs.append("outputcontrol:table:style,*,Photovoltaic:ElectricityProduced, monthly;")
         HBgeneratoroutputs.append("output:meter,*,Photovoltaic:ElectricityProduced, runperiod;")
@@ -3741,6 +3742,11 @@ class WriteOPS(object):
                 HBsystemgenerator_name = "generatorsystem" + str(HBsystemcount)
             else:
                 HBsystemgenerator_name = str(HBsystemgenerator.name)
+            
+            
+            self.generatorCosts.append('Honeybee system generator '+str(HBsystemgenerator.name))
+            # Add the Honeybee generation systems' annual operation and maintenance costs
+            self.generatorCosts.append('Honeybee system annual maintenance cost - '+str(HBsystemgenerator.maintenance_cost))
             
             # For this HBsystemgenerator write the output so that the produced electric energy is reported.
             HBgeneratoroutputs.append("Output:Variable,"+str(HBsystemgenerator_name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
@@ -3771,6 +3777,9 @@ class WriteOPS(object):
                     # Write HBsystemgenerator ElectricLoadCenter:Distribution
                     elcd = ops.ElectricLoadCenterDistribution(model)
                     elcd.setInverter(inverter)
+                    elcd.setName('PVgenerators:Distributionsystem')
+                    
+                    self.generatorCosts.append('Inverter cost - '+ str(HBsystemgenerator.simulationinverter[0].cost_)+ ' replacement time = '+ str(HBsystemgenerator.simulationinverter[0].replacementtime)+ ' years') 
                     
                     # Write HBsystemgenerator photovoltaic generators
                     for PVgen in HBsystemgenerator.PVgenerators:
@@ -3795,6 +3804,8 @@ class WriteOPS(object):
                             pvgenerator.setNumberOfModulesInSeries(PVgen.NOseries)
                             pvgenerator.setSurface(panel_surface)
                             elcd.addGenerator(pvgenerator)
+                            
+                            self.generatorCosts.append('PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
                             
                         except UnboundLocalError as e:
                             # mounted surface is not in model.getSurfaces so so PV generator is mounted on context surface
@@ -3928,7 +3939,24 @@ class WriteOPS(object):
         # Write the outputs required for HB generators to the model
         
         self.setOutputs(HBgeneratoroutputs, model)
+    
+    def writegeneration_system_financialdata(self,financialdata):
+        """This function takes the financial data and writes it to the IDF in such a way so that the
+        Honeybee_Read_generation_system_results can read it this is why the list is called newfinancialdata"""
+        newfinancialdata = []
+        newfinancialdata.append('\n')
+        newfinancialdata.append('!########## Facility generation system financial data ##########'+ '\n')
+        newfinancialdata.append('\n')
+        newfinancialdata.append('!!!!Y Honeybee generation system financial data'+'\n')
         
+        for dataitem in financialdata:
+            if dataitem.find('Honeybee system generator ') != -1:
+                newfinancialdata.append('!!!X Honeybee generation system name - ' + str(dataitem.replace('Honeybee system generator ',''))+'\n')
+            else:
+                newfinancialdata.append('!!!Z '+str(dataitem)+'\n')
+        newfinancialdata.append('\n')
+        
+        return newfinancialdata
     
     def createOSStanadardOpaqueMaterial(self, HBMaterialName, values, model):
         # values = ['Roughness', 'Thickness {m}', 'Conductivity {W/m-K}', 'Density {kg/m3}', 'Specific Heat {J/kg-K}', 'Thermal Absorptance', 'Solar Absorptance', 'Visible Absorptance']
@@ -4548,7 +4576,7 @@ class WriteOPS(object):
                     pass
     
     def getObjToReplace(self):
-        return self.csvSchedules, self.csvScheduleCount, self.shadeCntrlToReplace, self.replaceShdCntrl, self.windowSpectralDatasets, self.waterSourceVRFs
+        return self.csvSchedules, self.csvScheduleCount, self.shadeCntrlToReplace, self.replaceShdCntrl, self.windowSpectralDatasets, self.waterSourceVRFs, self.writegeneration_system_financialdata(self.generatorCosts)
 
 class HoneybeeHVAC(object):
     def __init__(self, ID, systemIndex, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, count):
@@ -4873,7 +4901,8 @@ class EPFeaturesNotInOS(object):
 
 class RunOPS(object):
     def __init__(self, model, weatherFilePath, HBZones, simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs):
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, \
+            waterSourceVRFs, generatorCosts):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.EPFolder = self.getEPFolder()
         self.EPPath = ops.Path(self.EPFolder + "\EnergyPlus.exe")
@@ -4889,6 +4918,7 @@ class RunOPS(object):
         self.replaceShdCntrl = replaceShdCntrl
         self.windowSpectralData = windowSpectralData
         self.waterSourceVRFs = waterSourceVRFs
+        self.generatorCosts = generatorCosts
         self.hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         self.lb_preparation = sc.sticky["ladybug_Preparation"]()
     
@@ -5121,6 +5151,11 @@ class RunOPS(object):
             for matName in self.windowSpectralData.keys():
                 spectDatStr = self.hb_EPObjectsAux.getEPObjectsStr(self.windowSpectralData[matName])
                 lines.append(spectDatStr)
+        
+        # write in any generator objects.
+        if len(self.generatorCosts) != 5:
+            for lin in self.generatorCosts:
+                lines.append(lin)
         
         # Write in a request for the surface names in the .eio file.
         lines.append('\nOutput:Surfaces:List,\n')
@@ -5523,7 +5558,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     hb_writeOPS.setOutputs(outputs, model)
     
     # Get the objects in the file that we need to replace or add because OpenStudio does not support them.
-    csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs = hb_writeOPS.getObjToReplace()
+    csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs, generatorCosts = hb_writeOPS.getObjToReplace()
     
     # If there are OSMeasures, assign them to the OpenStudio model.
     measureApplied = False
@@ -5559,7 +5594,8 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         
         # Run the model through OpenStudio
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs)
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, \
+            waterSourceVRFs, generatorCosts)
         
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt, idfFileP, idfFold)
         if runIt < 3:

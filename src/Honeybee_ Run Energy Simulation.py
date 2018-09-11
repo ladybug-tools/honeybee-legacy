@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.63\nJUL_24_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_11_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -111,6 +111,8 @@ class WriteIDF(object):
     def __init__(self, workingDir):
         self.fileBasedSchedules = {}
         self.workingDir = workingDir
+        self.PVcount = 0
+        self.PVcounter = 0
 
     def EPZone(self, zone):
         if zone.isPlenum:
@@ -1260,37 +1262,25 @@ class WriteIDF(object):
             '\t' + zone.velsquflow  + ';\t!- Velocity Squared Term Flow Coefficient\n'
             
     def write_PVgen(self,PVgen):
-    
+        self.PVcounter += 1
         return '\nGenerator:Photovoltaic,\n' + \
             '\t' + str(PVgen.name) + ',\t!- Name\n' + \
-            '\t' + str(PVgen.surfacename) + ',\t!- Surface Name\n'+\
-            '\t' + str(PVgen.performancetype) + ',\t!- Photovoltaic Performance Object Type\n'+\
-            '\t' + str(PVgen.namePVperformobject) + ',\t!- Module Performance Name\n'+\
-            '\t' + str(PVgen.integrationmode) + ',\t!- Heat Transfer Integration Mode\n'+\
+            '\t' + str(PVgen.mountedSurface.name) + ',\t!- Surface Name\n'+\
+            '\t' + 'PhotovoltaicPerformance:Simple,\t!- Photovoltaic Performance Object Type\n'+\
+            '\t' + 'Photovoltaic Performance Simple ' + str(self.PVcounter) + ',\t!- Module Performance Name\n'+\
+            '\t' + 'Decoupled,\t!- Heat Transfer Integration Mode\n'+\
             '\t' + str(PVgen.NOparallel) + ',\t!- Number of Series Strings in Parallel {dimensionless}\n'+\
             '\t' + str(PVgen.NOseries) + ';\t!- Number of Modules in Series {dimensionless}\n'
     
     
     def write_PVgenperformanceobject(self,PVgen):
-        
-        if PVgen.mode == 'simple':
-            
-            return '\nPhotovoltaicPerformance:Simple,\n' + \
-                '\t' + str(PVgen.namePVperformobject) + ',\t!- Name\n' + \
-                '\t' + str(PVgen.surfaceareacells) + ',\t!- Fraction of Surface Area with Active Solar Cells {dimensionless}\n'+\
-                '\t' + str(PVgen.cellefficiencyinputmode) + ',\t!- Conversion Efficiency Input Mode\n'+\
-                '\t' + str(PVgen.efficiency) + ',\t!- Value for Cell Efficiency if Fixed\n'+\
-                '\t' + str(PVgen.schedule) + ';\t!- Efficiency Schedule Name\n'
-                
-        if PVgen.mode == 'sandia':
-            
-            # Replace name in sandia with name of the PV surface.
-            for count,line in enumerate(PVgen.sandia):
-                if "         !- Name" in line:
-                
-                    PVgen.sandia[count] = PVgen.namePVperformobject+',         !- Name'
-                    
-            return '\n'.join(PVgen.sandia)
+        self.PVcount += 1
+        return '\nPhotovoltaicPerformance:Simple,\n' + \
+            '\t' + 'Photovoltaic Performance Simple ' + str(self.PVcount) + ',\t!- Name\n' + \
+            '\t' + str(PVgen.surfaceareacells) + ',\t!- Fraction of Surface Area with Active Solar Cells {dimensionless}\n'+\
+            '\t' + 'Fixed,\t!- Conversion Efficiency Input Mode\n'+\
+            '\t' + str(PVgen.efficiency) + ',\t!- Value for Cell Efficiency if Fixed\n'+\
+            '\t' + ';\t!- Efficiency Schedule Name\n'
             
     def simple_inverter(self,inverter):
         
@@ -1933,11 +1923,13 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         # This code here is used to extractingruntime periods if outputs are specified externally
         # If the function returns and exception that means that external outputs are not specified.
         # and teh default below will be used.
-        
+        timePeriods = ['hourly', 'daily', 'monthly', 'annual']
         def extracttimeperiod(simulationOutputs):
             try:
-                timeperiod = simulationOutputs[-1].split(',')[-1]
-                HBgeneratortimeperiod = timeperiod.replace(";","")
+                for output in simulationOutputs:
+                    endWord = output.split(',')[-1].strip().replace(";","")
+                    if endWord in timePeriods:
+                        HBgeneratortimeperiod = endWord
                 return HBgeneratortimeperiod
             except:
                 pass

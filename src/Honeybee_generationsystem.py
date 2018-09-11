@@ -40,13 +40,13 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_generationsystem"
 ghenv.Component.NickName = 'generationsystem'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_11_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP" #"06 | Honeybee"
+ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0" #"0"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import scriptcontext as sc

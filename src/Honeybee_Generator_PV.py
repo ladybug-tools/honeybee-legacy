@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.63
         _cellsEfficiency: A float or a list of floats that sequentially detail the efficiency of the Photovoltaic generator cells on each Honeybee surface in _HBSurfaces as a fraction. e.g the first float corresponds to the first Honeybee surface. If only one float is given this value will be used for all other PV generators.
         _NoParallel: A integer or a list of integers that sequentially correspond to each Honeybee surface in _HBSurfaces. These integers define the series-wired strings of PV modules that are in parallel to form the PV generator on each Honeybee surface. The product of this field and the next field will equal the total number of modules in the PV generator on each Honeybee surface. If only one integer is given this value will be used for all other PV generators.
         _Noseries: A integer or a list of integers that sequentially correspond to each Honeybee surface in _HBSurfaces.  These integers define the number of modules wired in series (on each string) to form the PV generator on each Honeybee surface in _HBSurfaces. The product of this field and the previous field will equal the total number of modules in the PV generator on each Honeybee surface. If only one integer is given this value will be used for all other PV generators.
-        _costPVgen: A float or a list of floats that sequentially correspond to each Honeybee surface in _HBSurfaces. The float is the cost of each PV module in US dollars (Other currencies will be available in the future). The cost of the PV generator will be the cost of the module multiplied by the number of modules in parallel and series (number of modules as a generator is made up of modules). If only one float is given this value will be used for all other PV generators.
+        costPVgen_: A float or a list of floats that sequentially correspond to each Honeybee surface in _HBSurfaces. The float is the cost of each PV module in US dollars (Other currencies will be available in the future). The cost of the PV generator will be the cost of the module multiplied by the number of modules in parallel and series (number of modules as a generator is made up of modules). If only one float is given this value will be used for all other PV generators. Default is set to $0.
         _powerOutput: A float or a list of floats that sequentially correspond to each Honeybee surface in _HBSurfaces. The float is the power output of each PV module in watts. The power output of the PV generator will be the power output of the module multiplied by the number of modules in parallel and series (number of modules as a generator is made up of modules). If only one float is given this value will be used for all other PV generators.
         _PVInverter: The inverter servicing all the PV generators in this component - to assign an inverter connect the HB_inverter here from the Honeybee inverter component
         sandiaMode_: Input just ONE Sandria data set as a panel here. Examples can be seen in C:\EnergyPlusV8-4-0\MacroDataSet\SandiaPVdata
@@ -56,13 +56,13 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Generator_PV"
 ghenv.Component.NickName = 'PVgen'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_08_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_11_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP" #"06 | Honeybee"
+ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
 #compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0" #"0"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import scriptcontext as sc
@@ -252,7 +252,7 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_NoParallel,_Noseries,_powerOutput,
 
     try:
     
-        for name,surface,celleff,parallel,series,powerout in itertools.izip_longest(_name_,HBSurfacesfromhive,_cellsEfficiency,_NoParallel,_Noseries,_powerOutputPerModule): 
+        for name,surface,celleff,parallel,series,powerout,costPVgen in itertools.izip_longest(_name_,HBSurfacesfromhive,_cellsEfficiency,_NoParallel,_Noseries,_powerOutputPerModule, costPVgen_): 
     
             surface.containsPVgen = True # Set this it true so the surface can be identified in run and write IDF component
             
@@ -411,7 +411,7 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_NoParallel,_Noseries,_powerOutput,
             message1 = "According to the data you entered it is calculated that the modules of this PV generator cover roughly "+str(round(SA_solarcell*100,2))+ " % of the surface area of this surface"
             
                 
-            surface.PVgenlist.append(PV_gen(name,surface,parallel,series,powerout,SA_solarcell,celleff))
+            surface.PVgenlist.append(PV_gen(name,surface,parallel,series,powerout,SA_solarcell,celleff,costPVgen))
                 
             # Assign the inverter to each PVgenerator.
             
@@ -432,9 +432,9 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_NoParallel,_Noseries,_powerOutput,
             # This catches an error when there is a missing member exception ie length of one of inputs is longer than 
             # number of Honeybee surfaces not sure how to just catch missing member exception!
             warn = "The length of a list of inputs into either _name_,_cellsEfficiency \n" + \
-                    "_integrationMode,_NoParallel,_Noseries,_costPVgen or _powerOutput \n" + \
+                    "_integrationMode,_NoParallel,_Noseries,costPVgen_ or _powerOutput \n" + \
                     "is longer than the number of Honeybee surfaces connected to this component!\n" + \
-                    "e.g if you have 2 Honeybee surfaces you cannot have 3 values input into _costPVgen!\n" + \
+                    "e.g if you have 2 Honeybee surfaces you cannot have 3 values input into costPVgen_!\n" + \
                     "Please check the inputs and try again!"
         
             #print warn
@@ -447,9 +447,9 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_NoParallel,_Noseries,_powerOutput,
             # This catches an error when there is a missing member exception ie length of one of inputs is longer than 
             # number of Honeybee surfaces not sure how to just catch missing member exception!
             warn = "The length of a list of inputs into either _name_,_cellsEfficiency \n" + \
-                    "_integrationMode,_NoParallel,_Noseries,_costPVgen or _powerOutput \n" + \
+                    "_integrationMode,_NoParallel,_Noseries,costPVgen_ or _powerOutput \n" + \
                     "is longer than the number of Honeybee surfaces connected to this component!\n" + \
-                    "e.g if you have 2 Honeybee surfaces you cannot have 3 values input into _costPVgen!\n" + \
+                    "e.g if you have 2 Honeybee surfaces you cannot have 3 values input into costPVgen_!\n" + \
                     "Please check the inputs and try again!"
         
             #print warn
