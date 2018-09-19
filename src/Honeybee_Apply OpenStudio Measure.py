@@ -53,7 +53,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.63\nJUL_03_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_19_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -143,6 +143,14 @@ def runCmd(batchFileAddress, shellKey = True):
     p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
     out, err = p.communicate()
 
+def tryGetOSPath(path):
+    """Try to convert a string path to OpenStudio Path."""
+    try:
+        return OpenStudio.Path(path)
+    except TypeError:
+        # OpenStudio 2.6.1
+        ospath = OpenStudio.OpenStudioUtilitiesCore.toPath(path)
+        return OpenStudio.Path(ospath)
 
 def main(runIt, epwFile, OSMeasures, osmFile, hb_OpenStudioMeasure):
     
@@ -164,9 +172,9 @@ def main(runIt, epwFile, OSMeasures, osmFile, hb_OpenStudioMeasure):
     osmName = os.path.split(osmFile)[-1].split('.osm')[0]
     workingDir = os.path.split(osmFile)[0]
     oswAddress = workingDir + '\\' + 'workflow.osw'
-    osmPath = OpenStudio.Path(osmFile)
-    epwPath = OpenStudio.Path(epwFile)
-    oswPath = OpenStudio.Path(oswAddress)
+    osmPath = tryGetOSPath(osmFile)
+    epwPath = tryGetOSPath(epwFile)
+    oswPath = tryGetOSPath(oswAddress)
     
     # Create the workflow JSON.
     wf = OpenStudio.WorkflowJSON()

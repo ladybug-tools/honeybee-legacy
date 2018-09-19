@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_Load OpenStudio Measure"
 ghenv.Component.NickName = 'importOSMeasure'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_19_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
@@ -270,7 +270,7 @@ class OpenStudioMeasure:
 def loadMeasureFromFile(xmlFile):
     if not os.path.isfile(xmlFile): raise Exception("Can't find measure at " + xmlFile)
     
-    measure = OpenStudio.BCLMeasure(OpenStudio.Path(_))
+    measure = OpenStudio.BCLMeasure(tryGetOSPath(xmlFile))
     if measure.arguments().Count == 0:
         print "Measure contains no arguments."
     # load arguments
@@ -297,6 +297,15 @@ def loadMeasureFromFile(xmlFile):
     sc.sticky["osMeasures"][key] = OSMeasure
     OSMeasure.updateArguments()
     return OSMeasure
+
+def tryGetOSPath(path):
+    """Try to convert a string path to OpenStudio Path."""
+    try:
+        return OpenStudio.Path(path)
+    except TypeError:
+        # OpenStudio 2.6.1
+        ospath = OpenStudio.OpenStudioUtilitiesCore.toPath(path)
+        return OpenStudio.Path(ospath)
 
 def loadMeasureFromMem():
     try:
@@ -355,7 +364,7 @@ if openStudioIsReady == True and initCheck == True and fileLoad == False:
         xmlFile = os.path.join(_OSMeasure, "measure.xml")
         if not os.path.isfile(xmlFile): raise Exception("Can't find measure at " + xmlFile)
         
-        measure = OpenStudio.BCLMeasure(OpenStudio.Path(_OSMeasure))
+        measure = OpenStudio.BCLMeasure(tryGetOSPath(_OSMeasure))
         if measure.arguments().Count == 0:
             print "Measure contains no arguments."
         

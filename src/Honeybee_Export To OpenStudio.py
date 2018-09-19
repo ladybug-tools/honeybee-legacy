@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_11_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_19_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -239,7 +239,7 @@ class WriteOPS(object):
         site.setElevation(elev)
         
         # Set weather file for OSM
-        ops.WeatherFile.setWeatherFile(model,ops.EpwFile(ops.Path(epwFilePath)))
+        ops.WeatherFile.setWeatherFile(model,ops.EpwFile(tryGetOSPath(epwFilePath)))
     
     def setStartDayOfWeek(self, model):
         # The ability to set the start day of week currently breaks OpenStudio's way of assigning schedules.
@@ -346,7 +346,7 @@ class WriteOPS(object):
             print "Can't find ddy file next to the EPW."
             print "Extreme values from the weather file design will be used instead."
         else:
-            ddyPath = ops.Path(ddyFile)
+            ddyPath = tryGetOSPath(ddyFile)
             ddyIdf = ops.IdfFile.load(ddyPath, ops.IddFileType("EnergyPlus"))
             ddyWorkSpcae = ops.Workspace(ddyIdf.get())
             reverseTranslator = ops.EnergyPlusReverseTranslator()
@@ -4601,8 +4601,8 @@ class OPSmeasures(object):
         self.osmName = os.path.split(osmFile)[-1].split('.osm')[0]
         self.workingDir = os.path.split(osmFile)[0]
         self.oswAddress = self.workingDir + '\\' + 'workflow.osw'
-        self.osmPath = ops.Path(osmFile)
-        self.oswPath = ops.Path(self.oswAddress)
+        self.osmPath = tryGetOSPath(osmFile)
+        self.oswPath = tryGetOSPath(self.oswAddress)
         
         # Put measures and model into the class.
         self.OSMeasures = OSMeasures
@@ -4905,9 +4905,9 @@ class RunOPS(object):
             waterSourceVRFs, generatorCosts):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.EPFolder = self.getEPFolder()
-        self.EPPath = ops.Path(self.EPFolder + "\EnergyPlus.exe")
-        self.epwFile = ops.Path(weatherFilePath)
-        self.iddFile = ops.Path(self.EPFolder + "\Energy+.idd")
+        self.EPPath = tryGetOSPath(self.EPFolder + "\EnergyPlus.exe")
+        self.epwFile = tryGetOSPath(weatherFilePath)
+        self.iddFile = tryGetOSPath(self.EPFolder + "\Energy+.idd")
         self.model = model
         self.HBZones = HBZones
         self.simParameters = simParameters
@@ -4936,7 +4936,7 @@ class RunOPS(object):
         except: pass
         
         idfFolder = os.path.join(projectFolder)
-        idfFilePath = ops.Path(os.path.join(projectFolder, "ModelToIdf", "in.idf"))
+        idfFilePath = tryGetOSPath(os.path.join(projectFolder, "ModelToIdf", "in.idf"))
         
         forwardTranslator = ops.EnergyPlusForwardTranslator()
         workspace = forwardTranslator.translateModel(self.model)
@@ -5188,7 +5188,7 @@ class RunOPS(object):
         # Preparation
         workingDir, fileName = os.path.split(osmFile)
         projectName = (".").join(fileName.split(".")[:-1])
-        osmPath = ops.Path(osmFile)
+        osmPath = tryGetOSPath(osmFile)
         
         # create idf - I separated this job as putting them together
         # was making EnergyPlus to crash
@@ -5252,6 +5252,16 @@ def checkUnits():
     print 'Conversion to Meters will be applied = ' + "%.3f"%conversionFactor
     
     return conversionFactor
+
+
+def tryGetOSPath(path):
+    """Try to convert a string path to OpenStudio Path."""
+    try:
+        return ops.Path(path)
+    except TypeError:
+        # OpenStudio 2.6.1
+        ospath = ops.OpenStudioUtilitiesCore.toPath(path)
+        return ops.Path(ospath)
 
 
 def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, OSMeasures, runIt, openOpenStudio, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
@@ -5568,7 +5578,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         measureApplied =  True
     
     # save the model
-    model.save(ops.Path(fname), True)
+    model.save(tryGetOSPath(fname), True)
     print "Model saved to: " + fname
     workingDir, fileName = os.path.split(fname)
     projectName = (".").join(fileName.split(".")[:-1])
