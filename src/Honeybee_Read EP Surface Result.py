@@ -41,12 +41,11 @@ Provided by Honeybee 0.0.63
         windowBeamEnergy: The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh).
         windowDiffEnergy: The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh).
         windowTransmissivity: The hourly transmissivity of the exterior windows of the model.  This data is needed to align a comfort map with an energy model possessing shades.
-        otherSurfaceData: Other surface data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized.
 """
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_08_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -217,7 +216,6 @@ windowBeamEnergy = DataTree[Object]()
 windowDiffEnergy = DataTree[Object]()
 windowTotalSolarEnergy = DataTree[Object]()
 windowTransmissivity = DataTree[Object]()
-otherSurfaceData = DataTree[Object]()
 
 #Make a list to keep track of what outputs are in the result file.
 dataTypeList = [False, False, False, False, False, False, False, False, False, False]
@@ -474,19 +472,6 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                         key.append(10)
                         dataTypeList[8] = True
                     
-                    elif 'Surface' in column and not "Heat Balance Surface Convection Rate"  in column:
-                        if gotSrfData == True:
-                            srfName, typeName = checkSrfNameOther(dataIndex, srfName)
-                            duplicateList.append(duplicate)
-                            pieceNumList.append(pieceNum)
-                            makeHeaderGrafted(otherSurfaceData, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], True, typeName)
-                        else:
-                            path.append([otherIndex])
-                            makeHeader(otherSurfaceData, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0],)
-                            otherIndex += 1
-                        key.append(9)
-                        dataTypeList[9] = True
-                    
                     else:
                         key.append(-1)
                         path.append(-1)
@@ -569,8 +554,6 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                                     srfPieceDataList[8][path[columnCount][0]][path[columnCount][1]].append(float(column))
                                 else:
                                     srfPieceDataList[8][path[columnCount][0]][path[columnCount][1]][lineCount-1] = (srfPieceDataList[8][path[columnCount][0]][path[columnCount][1]][lineCount-1] + float(column))/2
-                        elif key[columnCount] == 9:
-                            otherSurfaceData.Add(float(column), p)
                     
         parseSuccess = True
     except Exception as e:
@@ -640,12 +623,11 @@ outputsDict = {
 6: ["windowBeamEnergy", "The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh)."],
 7: ["windowDiffEnergy", "The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh)."],
 8: ["windowTransmissivity", "The hourly transmissivity of the exterior windows of the model.  This data is needed to align a comfort map with an energy model possessing shades."],
-9: ["otherSurfaceData", "Other surface data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
 }
 
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(10):
+    for output in range(9):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -655,7 +637,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(10):
+    for output in range(9):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
