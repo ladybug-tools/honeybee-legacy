@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_gbXML to Honeybee"
 ghenv.Component.NickName = 'XMLTOHB'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_05_2018'
+ghenv.Component.Message = 'VER 0.0.63\nSEP_26_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -246,7 +246,12 @@ if openStudioIsReady and _import and _filepath:
     assert _filepath.lower().endswith('.xml'), \
         '{} does not end with .xml. Not a valid xml file.'.format(_filepath)
     translator = ops.GbXMLReverseTranslator()
-    model = translator.loadModel(ops.Path(os.path.normpath(_filepath)))
+    try:
+        model = translator.loadModel(ops.Path(os.path.normpath(_filepath)))
+    except TypeError:
+        # OpenStudio 2.6.1
+        filepath = ops.OpenStudioUtilitiesCore.toPath(os.path.normpath(_filepath))
+        model = translator.loadModel(ops.Path(filepath))
     errors = translator.errors()
     warnings = translator.warnings()
     if ''.join(errors):
