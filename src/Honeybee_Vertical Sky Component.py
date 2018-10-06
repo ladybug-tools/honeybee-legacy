@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Vertical Sky Component"
 ghenv.Component.NickName = 'verticalSkyComponent'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
@@ -56,7 +56,7 @@ import Grasshopper.Kernel as gh
 import os
 import scriptcontext as sc
 
-def genVSCSky(illuminanceValue = 1000, skyType = "-c"):
+def genVSCSky(illuminanceValue = 100000, skyType = "-c"):
 
     def RADDaylightingSky(illuminanceValue, skyType):
         # gensky 12 4 +12:00 -c -B 55.866 > skies/sky_10klx.mat
@@ -117,9 +117,9 @@ def main(ad):
     
     # generate the sky
     if uniformSky_==True:
-        skyFilePath = genVSCSky(1000, "-u")
+        skyFilePath = genVSCSky(100000, "-u")
     else:
-        skyFilePath = genVSCSky(1000, "-c")
+        skyFilePath = genVSCSky(100000, "-c")
     
     DLAnalysisRecipe = sc.sticky["honeybee_DLAnalysisRecipe"]
     

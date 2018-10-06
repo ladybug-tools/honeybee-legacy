@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_26_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -8588,8 +8588,8 @@ class CalculateGridBasedDLAnalysisResults(object):
         resultFile = open(resultFile,"r")
         for line in resultFile:
             R, G, B = line.split('	')[0:3]
-            # divide by the sky horizontal illuminance = 1000
-            res = 17900*(.265 * float(R) + .67 * float(G) + .065 * float(B))/1000
+            # divide by the sky horizontal illuminance = 100000
+            res = 17900*(.265 * float(R) + .67 * float(G) + .065 * float(B))/100000
             if res > 100: res = 100
             result.append(res)
         return result
