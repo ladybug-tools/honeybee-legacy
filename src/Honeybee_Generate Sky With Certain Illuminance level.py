@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Generate Sky With Certain Illuminance level"
 ghenv.Component.NickName = 'genSkyIlluminanceLevel'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"
@@ -54,7 +54,7 @@ def RADDaylightingSky(illuminanceValue):
     
     return  "# start of sky definition for daylighting studies\n" + \
             "# horizontal sky illuminance: " + `illuminanceValue` + " lux\n" + \
-            "!gensky 12 6 12:00 -u -B " +  '%.3f'%(illuminanceValue/179) + "\n" + \
+            "!gensky 12 6 12:00 -c -B " +  '%.3f'%(illuminanceValue/179) + "\n" + \
             "skyfunc glow sky_mat\n" + \
             "0\n" + \
             "0\n" + \
