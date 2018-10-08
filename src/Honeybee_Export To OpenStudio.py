@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_19_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3346,8 +3346,8 @@ class WriteOPS(object):
         # Create a unique string that contains all unique space info.
         loadsIDstr = str(zone.equipmentLoadPerArea) + str(zone.infiltrationRatePerArea) + str(zone.lightingDensityPerArea) + \
             str(zone.numOfPeoplePerArea) + str(zone.ventilationPerPerson)
-        schIDstr = zone.occupancySchedule + zone.occupancyActivitySch + zone.lightingSchedule + \
-            zone.equipmentSchedule + zone.infiltrationSchedule
+        schIDstr = str(zone.occupancySchedule) + str(zone.occupancyActivitySch) + str(zone.lightingSchedule) + \
+            str(zone.equipmentSchedule) + str(zone.infiltrationSchedule)
         spaceIDstr = loadsIDstr + schIDstr
         
         # Create a new space type if there is nothing in the library with all of the right properties.
