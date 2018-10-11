@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_08_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_11_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1650,7 +1650,15 @@ class WriteOPS(object):
                 elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                 elif hbZones[zCount].recirculatedAirPerArea == 0:
-                    airTerminal = ops.AirTerminalSingleDuctUncontrolled(model, model.alwaysOnDiscreteSchedule())
+                    try:
+                        vernum1, vernum2 = int(osVersion.split('.')[0]), int(osVersion.split('.')[1])
+                    except:
+                        vernum1 = 1
+                        vernum2 = 0
+                    if vernum1 >= 2 and vernum2 >= 7:
+                        airTerminal = ops.AirTerminalSingleDuctConstantVolumeNoReheat(model, model.alwaysOnDiscreteSchedule())
+                    else:
+                        airTerminal = ops.AirTerminalSingleDuctUncontrolled(model, model.alwaysOnDiscreteSchedule())
                 else:
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
             if hbZones[zCount].recirculatedAirPerArea != 0 and terminalOption != "ChilledBeam":
@@ -1758,7 +1766,15 @@ class WriteOPS(object):
                 elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                 elif hbZones[zCount].recirculatedAirPerArea == 0:
-                    airTerminal = ops.AirTerminalSingleDuctUncontrolled(model, model.alwaysOnDiscreteSchedule())
+                    try:
+                        vernum1, vernum2 = int(osVersion.split('.')[0]), int(osVersion.split('.')[1])
+                    except:
+                        vernum1 = 1
+                        vernum2 = 0
+                    if vernum1 >= 2 and vernum2 >= 7:
+                        airTerminal = ops.AirTerminalSingleDuctConstantVolumeNoReheat(model, model.alwaysOnDiscreteSchedule())
+                    else:
+                        airTerminal = ops.AirTerminalSingleDuctUncontrolled(model, model.alwaysOnDiscreteSchedule())
                 else:
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
             if hbZones[zCount].recirculatedAirPerArea != 0 and terminalOption != "ChilledBeam":
