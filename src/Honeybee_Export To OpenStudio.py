@@ -113,6 +113,11 @@ if sc.sticky.has_key('honeybee_release'):
             osVersion = openStudioLibFolder.split('-')[-1].split('/')[0]
         except:
             pass
+        try:
+            vernum1, vernum2 = int(osVersion.split('.')[0]), int(osVersion.split('.')[1])
+        except:
+            vernum1 = 1
+            vernum2 = 0
         
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
@@ -1650,11 +1655,6 @@ class WriteOPS(object):
                 elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                 elif hbZones[zCount].recirculatedAirPerArea == 0:
-                    try:
-                        vernum1, vernum2 = int(osVersion.split('.')[0]), int(osVersion.split('.')[1])
-                    except:
-                        vernum1 = 1
-                        vernum2 = 0
                     if vernum1 >= 2 and vernum2 >= 7:
                         airTerminal = ops.AirTerminalSingleDuctConstantVolumeNoReheat(model, model.alwaysOnDiscreteSchedule())
                     else:
@@ -1766,11 +1766,6 @@ class WriteOPS(object):
                 elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                 elif hbZones[zCount].recirculatedAirPerArea == 0:
-                    try:
-                        vernum1, vernum2 = int(osVersion.split('.')[0]), int(osVersion.split('.')[1])
-                    except:
-                        vernum1 = 1
-                        vernum2 = 0
                     if vernum1 >= 2 and vernum2 >= 7:
                         airTerminal = ops.AirTerminalSingleDuctConstantVolumeNoReheat(model, model.alwaysOnDiscreteSchedule())
                     else:
@@ -2449,12 +2444,6 @@ class WriteOPS(object):
             # Check that the version of OpenStudio is correct for ground source hydronic systems.
             if coolingDetails != None:
                 if coolingDetails.chillerType == 'GroundSourced':
-                    try:
-                        vernum1 = int(osVersion.split('.')[0])
-                        vernum2 = int(osVersion.split('.')[1])
-                    except:
-                        vernum1 = 1
-                        vernum2 = 0
                     if vernum1 > 2:
                         pass
                     elif vernum1 == 2 and vernum2 >=4:
@@ -5016,6 +5005,12 @@ class RunOPS(object):
             lines.append(otherFeatureClass.createCSVSchedString(schedule))
         
         # If a start day of the week is specified, change it.
+        if vernum1 <= 2 and vernum2 < 7:
+            magic_num = 7
+            default_d = "UseWeatherFile"
+        else:
+            magic_num = 9
+            default_d = "Thursday"
         counter = 0
         swapTrigger = False
         for lCount, line in enumerate(lines):
@@ -5023,11 +5018,11 @@ class RunOPS(object):
                 swapTrigger = True
             if swapTrigger == True:
                 counter += 1
-            if counter == 7:
+            if counter == magic_num:
                 if simParameters[8] != None:
                     lines[lCount] = simParameters[8] + ',\n'
                 else:
-                    lines[lCount] = "UseWeatherFile" + ',\n'
+                    lines[lCount] = default_d + ',\n'
         
         # Write in any Holidays.
         if simParameters[7] != []:
