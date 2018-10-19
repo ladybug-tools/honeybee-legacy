@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_06_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_18_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3198,7 +3198,7 @@ class hb_WriteRADAUX(object):
             for par in radParameters["additional"]:
                 line1_2 += "-%s  "%par
             
-        line1_3 = " -e error.log " + octFileName + ".oct < " + ptsFile + \
+        line1_3 = " -af " + projectName + ".amb -e error.log " + octFileName + ".oct < " + ptsFile + \
                   " > " + outputFile + "\n"
         
         return line0 + line1_1 + line1_2 + line1_3
