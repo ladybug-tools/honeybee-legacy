@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_Load OpenStudio Measure"
 ghenv.Component.NickName = 'importOSMeasure'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_19_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
@@ -270,32 +270,25 @@ class OpenStudioMeasure:
 def loadMeasureFromFile(xmlFile):
     if not os.path.isfile(xmlFile): raise Exception("Can't find measure at " + xmlFile)
     
-    measure = OpenStudio.BCLMeasure(tryGetOSPath(xmlFile))
+    directory, f_name = os.path.split(xmlFile)
+    measure = OpenStudio.BCLMeasure(tryGetOSPath(directory))
+    
     if measure.arguments().Count == 0:
         print "Measure contains no arguments."
+    measureType = updateComponentDescription(xmlFile)
     # load arguments
     args = get_measureArgs(xmlFile)
-    path = gh.Data.GH_Path(0)
-    for i, key in enumerate(sorted(args.keys())):
-        addInputParam(args[key], path, i+1)
-    
-    with open(xmlFile, "r") as measure:
-        lines = "".join(measure.readlines())
-        if 'EnergyPlusMeasure' in lines:
-            measureType = 'EnergyPlus'
-        elif 'ModelMeasure' in lines:
-            measureType = 'OpenStudio'
-        elif 'ReportingMeasure' in lines:
-            measureType = 'Reporting'
     
     # create an OSMeasure based on default values
     OSMeasure = OpenStudioMeasure(ghenv.Component.Name, ghenv.Component.NickName, ghenv.Component.Description, _, args, measureType)
+    OSMeasure.updateArguments()
+    
     # add the measure to sticky to be able to load and update it
     key = ghenv.Component.InstanceGuid.ToString()
     if "osMeasures" not in sc.sticky.keys():
         sc.sticky["osMeasures"] = dict()
     sc.sticky["osMeasures"][key] = OSMeasure
-    OSMeasure.updateArguments()
+    
     return OSMeasure
 
 def tryGetOSPath(path):
@@ -333,15 +326,15 @@ except:
         xmlFile = os.path.join(_ , "measure.xml")
         OSMeasure = loadMeasureFromFile(xmlFile)
         fileLoad = True
-    except:
-        pass
+    except Exception as e:
+        print e
 
 #Honeybee check.
 initCheck = True
 if not sc.sticky.has_key('honeybee_release') == True:
     initCheck = False
     print "You should first let Honeybee fly..."
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Honeybee fly...")
 else:
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
