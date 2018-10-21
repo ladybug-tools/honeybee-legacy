@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Material"
 ghenv.Component.NickName = 'EPWindowMat'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_21_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
@@ -96,7 +96,7 @@ def main(name, U_Value, SHGC, VT):
             
     return materialStr
 
-if _name and _U_Value and _SHGC and _VT:
+if _name is not None and _U_Value is not None and _SHGC is not None and _VT is not None :
     checkData = checkInputs()
     if checkData == True:
         EPMaterial = main(_name, _U_Value, _SHGC, _VT)
