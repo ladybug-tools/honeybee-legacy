@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = 'Honeybee_Assembly Uvalue'
 ghenv.Component.NickName = 'assemblyUvalue'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_22_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -199,17 +199,31 @@ def main(glazingSrf, frameThickness, edgeThickness, cogUvalue, jambUvalue, sillU
     
     
     # Loft curve segments to generate frame+ edge surfaces.
-    if frameCurve.SegmentCount != cogCurve.SegmentCount:
+    failed = False
+    try:
+        if frameCurve.SegmentCount != cogCurve.SegmentCount:
+            failed = True
+    except:
+        if frameCurve.SpanCount != cogCurve.SpanCount:
+            failed = True
+    if failed == True:
         warning = "Could not match the end of the frame to the center of glass segments"
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return None, None, cogSurface, frameCurve, None, None
+        return -1
     
     exploFrameCurve = rc.Geometry.PolyCurve.DuplicateSegments(frameCurve)
     exploCogCurve = rc.Geometry.PolyCurve.DuplicateSegments(cogCurve)
+    exploFramePts = [cr.PointAtStart for cr in exploFrameCurve]
+    exploCogPts = [cr.PointAtStart for cr in exploCogCurve]
     edgeFrameBreps = []
-    for count, crv in enumerate(exploFrameCurve):
-        edgeFrameBrep = rc.Geometry.Brep.CreateFromLoft([crv,exploCogCurve[count]], rc.Geometry.Point3d.Unset, rc.Geometry.Point3d.Unset, rc.Geometry.LoftType.Normal, False)[0]
+    for i, crv in enumerate(exploFrameCurve):
+        pt = exploFramePts[i]
+        closePts = []
+        for cgpt in exploCogPts:
+            closePts.append(rc.Geometry.Point3d.DistanceTo(pt, cgpt))
+        closesti= [x for _,x in sorted(zip(closePts,range(len(exploCogPts))))][0]
+        edgeFrameBrep = rc.Geometry.Brep.CreateFromLoft([crv,exploCogCurve[closesti]], rc.Geometry.Point3d.Unset, rc.Geometry.Point3d.Unset, rc.Geometry.LoftType.Normal, False)[0]
         edgeFrameBreps.append(edgeFrameBrep)
     
     # Sort the edge + frame surfaces into frame, edge and sill.
