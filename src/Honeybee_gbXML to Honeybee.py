@@ -133,8 +133,8 @@ def getOSSurfaceConstructionName(s, constructionCollection, missingConstrCount =
         #print 'Construction for {} is missing. Default construction will be used.'.format(s.name())
         return None, missingConstrCount
     else:
-        if not str(construction.name()) in constructionCollection:
-            print 'Failed to find {} in constructions.'.format(construction.name())
+        if not str(construction.nameString().upper()) in constructionCollection:
+            print 'Failed to find {} in constructions.'.format(construction.nameString().upper())
             return None, missingConstrCount
         else:
             return str(construction.name()), missingConstrCount
@@ -217,12 +217,13 @@ if sc.sticky.has_key('honeybee_release'):
         # openstudio is there
         openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
         openStudioIsReady = True
+        print openStudioLibFolder
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder + "\\openStudio.dll")
         import sys
         if openStudioLibFolder not in sys.path:
             sys.path.append(openStudioLibFolder)
-        
+
         import OpenStudio as ops
     else:
         openStudioIsReady = False
@@ -239,7 +240,7 @@ else:
     openStudioIsReady = False
 
 if openStudioIsReady and _import and _filepath:
-    
+
     _filepath = _filepath.replace('\\\\', '/').replace('\\', '/')
     assert os.path.isfile(_filepath), \
         'Failed to find the xml file at {}.'.format(_filepath)
@@ -251,7 +252,9 @@ if openStudioIsReady and _import and _filepath:
     except TypeError:
         # OpenStudio 2.6.1
         filepath = ops.OpenStudioUtilitiesCore.toPath(os.path.normpath(_filepath))
-        model = translator.loadModel(ops.Path(filepath))
+        #model = translator.loadModel(ops.Path(filepath))
+        #model = translator.loadModel(ops.OpenStudioUtilitiesCore.toPath(filepath))
+        model = translator.loadModel(filepath)#ops.OpenStudioUtilitiesCore.toPath(filepath))
     errors = translator.errors()
     warnings = translator.warnings()
     if ''.join(errors):
@@ -262,22 +265,22 @@ if openStudioIsReady and _import and _filepath:
     success = True
     model = model.get()
 
-    # check materials and constructions and add them to honeybee
+    ## check materials and constructions and add them to honeybee
     constructions = {str(c.handle()): c for c in model.getConstructions()}
     materials = {str(m.handle()): m for m in model.getMaterials()}
     constructionCollection = {}
     materialCollection = {}
-    
+
     for c in constructions.itervalues():
         if str(c.name()) == 'Air Wall':
             continue
-        constructionCollection[str(c.name())] = getHBConstruction(c, materials)
+        constructionCollection[str(c.nameString().upper())] = getHBConstruction(c, materials)
         for m in c.layers():
             assert str(m.handle()) in materials, \
                 '"{}" material from "{}" construction is not in gbXML materials.' \
-                .format(m.name(), c.name())
-            materialCollection[str(m.name())] = getHBMaterial(m)
-    
+                .format(m.nameString().upper(), c.nameString().upper())
+            materialCollection[str(m.nameString().upper())] = getHBMaterial(m)
+
     # list of final HBzones
     zones = []
     # dictionary to store boundary consition and adjacency information.
@@ -285,13 +288,12 @@ if openStudioIsReady and _import and _filepath:
     # number of surfaces with missing construcitons
     missingCcount = 0
     adjResetNeeded = False
-    
+
     if not _zoneNames:
         spaces = model.getSpaces()
     else:
         spaces = tuple(s for s in model.getSpaces() if str(s.name()) in _zoneNames)
-    
-    
+
     for space in spaces:
         # create thermal zone
         zone = space.thermalZone()
@@ -299,6 +301,7 @@ if openStudioIsReady and _import and _filepath:
             continue
         z = zone.get()
         hbz = EPZone(None, 0, str(space.name()), program = [None, None], isConditioned = True)
+        #print hbz
         for s in space.surfaces:
             # create EP surface
             minZ = min(p.z() for p in s.vertices())
@@ -307,7 +310,7 @@ if openStudioIsReady and _import and _filepath:
             construction, missingCcount = getOSSurfaceConstructionName(s, constructionCollection, missingCcount)
             if construction:
                 srf.construction = construction
-            
+
             # store adjacency information
             HsrfName = srf.name
             if str(s.outsideBoundaryCondition()) == 'Ground':
@@ -321,7 +324,7 @@ if openStudioIsReady and _import and _filepath:
                 adjResetNeeded = True
             else:
                 adjDict[HsrfName] = ['OUTDOORS', None]
-            
+
             hbz.addSrf(srf)
             for ss in s.subSurfaces():
                 #create the surface
@@ -330,13 +333,13 @@ if openStudioIsReady and _import and _filepath:
                 if construction:
                    fenSrf.construction = construction
                 srf.addChildSrf(fenSrf)
-        
+
         zones.append(hbz)
-    
+
     # create the zones
     for zone in zones:
         zone.createZoneFromSurfaces()
-    
+
     # try to edit the zone adjacencies to reflect what is in the gbXML.
     if adjResetNeeded == True:
         for zone in zones:
@@ -358,18 +361,17 @@ if openStudioIsReady and _import and _filepath:
                         srf.setSunExposure('NoSun')
                 except:
                     print 'Cound not set the boundary conditions correctly for surface {}'.format(srf.name)
-    
+
     # give warnings about missing constructions.
     if missingCcount != 0:
         print '{} surfaces have missing constructions. Default construction will be used.'.format(str(missingCcount))
-    
+
     shadings = (EPSHDSurface(getGeometry(shd), 1, str(shd.name()))
                 for shd in model.getShadingSurfaces())
-    
+
     # add construction to honeybee library
     sc.sticky ["honeybee_constructionLib"].update(constructionCollection)
     sc.sticky["honeybee_materialLib"].update(materialCollection)
-    
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZones = hb_hive.addToHoneybeeHive(zones, ghenv.Component)
     
