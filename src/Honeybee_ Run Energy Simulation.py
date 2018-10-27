@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_11_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_27_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -364,6 +364,10 @@ class WriteIDF(object):
             return False,[]
     
     def EPFenSurface (self, surface):
+        try:
+            epVerNum = int(''.join(sc.sticky["honeybee_folders"]["EPVersion"].split('.')))
+        except:
+            epVerNum = 0
         glzStr = ""
         try:
             for childSrf in surface.childSrfs:
@@ -389,17 +393,29 @@ class WriteIDF(object):
                     shdCntrl = ''
                 
                 if checked:
-                    str_1 = '\nFenestrationSurface:Detailed,\n' + \
-                        '\t' + childSrf.name + ',\t!- Name\n' + \
-                        '\t' + childSrf.srfType[childSrf.type] + ',\t!- Surface Type\n' + \
-                        '\t' + childSrf.construction + ',\t!- Construction Name\n' + \
-                        '\t' + childSrf.parent.name + ',\t!- Surface Name\n' + \
-                        '\t' + childSrf.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
-                        '\t' + childSrf.groundViewFactor + ',\t!- View Factor to Ground\n' + \
-                        '\t' + shdCntrl + ',\t!- Shading Control Name\n' + \
-                        '\t' + childSrf.frameName + ',\t!- Frame and Divider Name\n' + \
-                        '\t' + `childSrf.Multiplier`+ ',\t!- Multiplier\n' + \
-                        '\t' + `len(glzCoordinates)` + ',\t!- Number of Vertices\n'
+                    if epVerNum >= 900:
+                        str_1 = '\nFenestrationSurface:Detailed,\n' + \
+                            '\t' + childSrf.name + ',\t!- Name\n' + \
+                            '\t' + childSrf.srfType[childSrf.type] + ',\t!- Surface Type\n' + \
+                            '\t' + childSrf.construction + ',\t!- Construction Name\n' + \
+                            '\t' + childSrf.parent.name + ',\t!- Surface Name\n' + \
+                            '\t' + childSrf.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
+                            '\t' + childSrf.groundViewFactor + ',\t!- View Factor to Ground\n' + \
+                            '\t' + childSrf.frameName + ',\t!- Frame and Divider Name\n' + \
+                            '\t' + `childSrf.Multiplier`+ ',\t!- Multiplier\n' + \
+                            '\t' + `len(glzCoordinates)` + ',\t!- Number of Vertices\n'
+                    else:
+                        str_1 = '\nFenestrationSurface:Detailed,\n' + \
+                            '\t' + childSrf.name + ',\t!- Name\n' + \
+                            '\t' + childSrf.srfType[childSrf.type] + ',\t!- Surface Type\n' + \
+                            '\t' + childSrf.construction + ',\t!- Construction Name\n' + \
+                            '\t' + childSrf.parent.name + ',\t!- Surface Name\n' + \
+                            '\t' + childSrf.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
+                            '\t' + childSrf.groundViewFactor + ',\t!- View Factor to Ground\n' + \
+                            '\t' + shdCntrl + ',\t!- Shading Control Name\n' + \
+                            '\t' + childSrf.frameName + ',\t!- Frame and Divider Name\n' + \
+                            '\t' + `childSrf.Multiplier`+ ',\t!- Multiplier\n' + \
+                            '\t' + `len(glzCoordinates)` + ',\t!- Number of Vertices\n'
                 
                     str_2 = '\t';
                     for ptCount, pt in enumerate(glzCoordinates):
@@ -757,21 +773,45 @@ class WriteIDF(object):
                 '\t' + booleanToText[runForWeather] + '; !- Run Simulation for Weather File Run Periods\n'
     
     def EPRunPeriod(self, name = 'annualRun', stDay = 1, stMonth = 1, endDay = 31, endMonth = 12, startDayOfWeek = 'UseWeatherFile'):
-        if startDayOfWeek == None:
-            startDayOfWeek = 'UseWeatherFile'
+        try:
+            epVerNum = int(''.join(sc.sticky["honeybee_folders"]["EPVersion"].split('.')))
+        except:
+            epVerNum = 0
         
-        return '\nRunPeriod,\n' + \
-               '\t' + name + ',    !- Name\n' + \
-               '\t' + `stMonth` + ',   !- Begin Month\n' + \
-               '\t' + `stDay` + ',    !- Begin Day of Month\n' + \
-               '\t' + `endMonth` + ', !- End Month\n' + \
-               '\t' + `endDay` + ',   !- End Day of Month\n' + \
-               '\t' + startDayOfWeek + ',   !- Day of Week for Start Day\n' + \
-               '\t' + 'Yes,              !- Use Weather File Holidays and Special Days\n' + \
-               '\t' + 'Yes,              !- Use Weather File Daylight Saving Period\n' + \
-               '\t' + 'No,               !- Apply Weekend Holiday Rule\n' + \
-               '\t' + 'Yes,              !- Use Weather File Rain Indicators\n' + \
-               '\t' + 'Yes;              !- Use Weather File Snow Indicators\n'
+        if epVerNum >= 900:
+            if startDayOfWeek == None:
+                startDayOfWeek = 'Monday'
+            
+            return '\nRunPeriod,\n' + \
+                   '\t' + name + ',    !- Name\n' + \
+                   '\t' + `stMonth` + ',   !- Begin Month\n' + \
+                   '\t' + `stDay` + ',    !- Begin Day of Month\n' + \
+                   '\t' + ',    !- Begin Year\n' + \
+                   '\t' + `endMonth` + ', !- End Month\n' + \
+                   '\t' + `endDay` + ',   !- End Day of Month\n' + \
+                   '\t' + ',    !- End Year\n' + \
+                   '\t' + startDayOfWeek + ',   !- Day of Week for Start Day\n' + \
+                   '\t' + 'Yes,              !- Use Weather File Holidays and Special Days\n' + \
+                   '\t' + 'Yes,              !- Use Weather File Daylight Saving Period\n' + \
+                   '\t' + 'No,               !- Apply Weekend Holiday Rule\n' + \
+                   '\t' + 'Yes,              !- Use Weather File Rain Indicators\n' + \
+                   '\t' + 'Yes;              !- Use Weather File Snow Indicators\n'
+        else:
+            if startDayOfWeek == None:
+                startDayOfWeek = 'UseWeatherFile'
+            
+            return '\nRunPeriod,\n' + \
+                   '\t' + name + ',    !- Name\n' + \
+                   '\t' + `stMonth` + ',   !- Begin Month\n' + \
+                   '\t' + `stDay` + ',    !- Begin Day of Month\n' + \
+                   '\t' + `endMonth` + ', !- End Month\n' + \
+                   '\t' + `endDay` + ',   !- End Day of Month\n' + \
+                   '\t' + startDayOfWeek + ',   !- Day of Week for Start Day\n' + \
+                   '\t' + 'Yes,              !- Use Weather File Holidays and Special Days\n' + \
+                   '\t' + 'Yes,              !- Use Weather File Daylight Saving Period\n' + \
+                   '\t' + 'No,               !- Apply Weekend Holiday Rule\n' + \
+                   '\t' + 'Yes,              !- Use Weather File Rain Indicators\n' + \
+                   '\t' + 'Yes;              !- Use Weather File Snow Indicators\n'
     
     def EPHoliday(self, date, count):
         
@@ -1807,7 +1847,10 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     #################  BODY #####################
     print "[3 of 8] Writing geometry..."
     ZoneCollectionBasedOnSchAndLoads = {} # This will be used to create zoneLists
-    
+    try:
+        epVerNum = int(''.join(sc.sticky["honeybee_folders"]["EPVersion"].split('.')))
+    except:
+        epVerNum = 0
     
     # write idf file
     for zone in thermalZonesPyClasses:
@@ -1862,34 +1905,40 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     
                     # Check if there is any shading for the window.
                     if childSrf.shadingControlName != []:
-                        for shadingCount, windowShading in enumerate(childSrf.shadingControlName):
-                            try:
-                                if windowShading not in shdCntrlCollection:
-                                    values = hb_EPObjectsAux.getEPObjectDataByName(windowShading)
-                                    if not values[4][0].endswith('.CSV'):
-                                        idfFile.write(hb_EPObjectsAux.getEPObjectsStr(windowShading))
-                                    else:
-                                        newSchedName = os.path.basename(values[4][0]).replace('.CSV', '')
-                                        initStr = hb_EPObjectsAux.getEPObjectsStr(windowShading)
-                                        finStr = initStr.replace(values[4][0], newSchedName)
-                                        idfFile.write(finStr)
-                                    
-                                    if values[2][0] != '':
-                                        # Iniitalize for construction (for switchable glazing).
-                                        constrName = values[2][0]
-                                        if constrName not in EPConstructionsCollection:
-                                            EPConstructionsCollection.append(constrName)
-                                    else:
-                                        # Iniitalize for material (for blinds and shades).
-                                        materialName = values[8][0]
-                                        if materialName not in EPMaterialCollection:
-                                            EPMaterialCollection.append(materialName)
-                                    
-                                    if values[4][0] != '' and values[4][0] not in EPScheduleCollection:
-                                        EPScheduleCollection.append(values[4][0].upper())
-                                    
-                                    shdCntrlCollection.append(windowShading)
-                            except: pass
+                        if epVerNum >= 900:
+                            msg = 'This component does not support shading control in versions of E+ greater than 9.0.0.\n' \
+                                'Use and older version of EnergyPlus or use the OpenStudio component.'
+                            print msg
+                            ghenv.Component.AddRuntimeMessage(w, msg)
+                        else:
+                            for shadingCount, windowShading in enumerate(childSrf.shadingControlName):
+                                try:
+                                    if windowShading not in shdCntrlCollection:
+                                        values = hb_EPObjectsAux.getEPObjectDataByName(windowShading)
+                                        if not values[4][0].endswith('.CSV'):
+                                            idfFile.write(hb_EPObjectsAux.getEPObjectsStr(windowShading))
+                                        else:
+                                            newSchedName = os.path.basename(values[4][0]).replace('.CSV', '')
+                                            initStr = hb_EPObjectsAux.getEPObjectsStr(windowShading)
+                                            finStr = initStr.replace(values[4][0], newSchedName)
+                                            idfFile.write(finStr)
+                                        
+                                        if values[2][0] != '':
+                                            # Iniitalize for construction (for switchable glazing).
+                                            constrName = values[2][0]
+                                            if constrName not in EPConstructionsCollection:
+                                                EPConstructionsCollection.append(constrName)
+                                        else:
+                                            # Iniitalize for material (for blinds and shades).
+                                            materialName = values[8][0]
+                                            if materialName not in EPMaterialCollection:
+                                                EPMaterialCollection.append(materialName)
+                                        
+                                        if values[4][0] != '' and values[4][0] not in EPScheduleCollection:
+                                            EPScheduleCollection.append(values[4][0].upper())
+                                        
+                                        shdCntrlCollection.append(windowShading)
+                                except: pass
                 
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))
