@@ -56,7 +56,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Generator_PV"
 ghenv.Component.NickName = 'PVgen'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_11_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_30_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
@@ -251,9 +251,19 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_NoParallel,_Noseries,_powerOutput,
                 return
 
     try:
-    
-        for name,surface,celleff,parallel,series,powerout,costPVgen in itertools.izip_longest(_name_,HBSurfacesfromhive,_cellsEfficiency,_NoParallel,_Noseries,_powerOutputPerModule, costPVgen_): 
-    
+        i = 0
+        for name,surface in itertools.izip_longest(_name_,HBSurfacesfromhive): 
+            # get corresponding properties.
+            celleff = _cellsEfficiency[0] if len(_cellsEfficiency) == 1 else _cellsEfficiency[i]
+            parallel = _NoParallel[0] if len(_NoParallel) == 1 else _NoParallel[i]
+            series = _Noseries[0] if len(_Noseries) == 1 else _Noseries[i]
+            powerout = _powerOutputPerModule[0] if len(_powerOutputPerModule) == 1 else _powerOutputPerModule[i]
+            if len(costPVgen_) == 0:
+                costPVgen = 0
+            else:
+                costPVgen = costPVgen_[0] if len(costPVgen_) == 1 else costPVgen_[i]
+            i += 1
+            
             surface.containsPVgen = True # Set this it true so the surface can be identified in run and write IDF component
             
             surface.PVgenlist = [] # Set the PVgenlist of each surface back to empty otherwise PVgen objects will accumulate on each run
@@ -427,22 +437,7 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_NoParallel,_Noseries,_powerOutput,
 
     except Exception as e:
         
-        if str(e) == "unsupported operand type(s) for *: 'float' and 'NoneType'":
-            
-            # This catches an error when there is a missing member exception ie length of one of inputs is longer than 
-            # number of Honeybee surfaces not sure how to just catch missing member exception!
-            warn = "The length of a list of inputs into either _name_,_cellsEfficiency \n" + \
-                    "_integrationMode,_NoParallel,_Noseries,costPVgen_ or _powerOutput \n" + \
-                    "is longer than the number of Honeybee surfaces connected to this component!\n" + \
-                    "e.g if you have 2 Honeybee surfaces you cannot have 3 values input into costPVgen_!\n" + \
-                    "Please check the inputs and try again!"
-        
-            #print warn
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warn)
-            return -1 
-            
-        elif str(e) == "'NoneType' object has no attribute 'containsPVgen'":
+        if str(e) == "'NoneType' object has no attribute 'containsPVgen'":
             
             # This catches an error when there is a missing member exception ie length of one of inputs is longer than 
             # number of Honeybee surfaces not sure how to just catch missing member exception!

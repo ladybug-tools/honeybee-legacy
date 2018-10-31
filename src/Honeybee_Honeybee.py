@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_27_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_30_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7751,7 +7751,7 @@ class PV_gen(object):
     Generator:WindTurbine
     """
     
-    def __init__(self,_name,mountedsurface_,No_parallel,No_series,powerout,SA_solarcells,cell_n):
+    def __init__(self,_name,mountedsurface_,No_parallel,No_series,powerout,SA_solarcells,cell_n,cost):
         
         self.name = _name
         self.mountedSurface = mountedsurface_
@@ -7759,6 +7759,9 @@ class PV_gen(object):
         
         self.NOparallel = No_parallel
         self.NOseries = No_series
+        self.surfaceareacells = SA_solarcells
+        self.efficiency = cell_n
+        self.cost_ = cost or 0
         
         # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
         # number in series by number in parallel.
@@ -7766,7 +7769,6 @@ class PV_gen(object):
         self.powerout = powerout*No_series*No_parallel
         
         self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
-        
 
 class PVinverter(object):
     
