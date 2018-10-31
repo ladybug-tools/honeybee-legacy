@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_gbXML to Honeybee"
 ghenv.Component.NickName = 'XMLTOHB'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_26_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_30_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -58,6 +58,16 @@ ghenv.Component.AdditionalHelpFromDocStrings = "0"
 import os
 import scriptcontext as sc
 import Rhino as rc
+
+# check the version of OpenStudio.
+openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
+try:
+    osVersion = openStudioLibFolder.split('-')[-1].split('/')[0]
+    vernum1, vernum2 = osVersion.split('.')[0], osVersion.split('.')[1]
+except:
+    vernum1, vernum2= '1', '0'
+vers = int(vernum1 + vernum2)
+
 
 def getHBMaterial(m):
     mat = {}
@@ -133,11 +143,18 @@ def getOSSurfaceConstructionName(s, constructionCollection, missingConstrCount =
         #print 'Construction for {} is missing. Default construction will be used.'.format(s.name())
         return None, missingConstrCount
     else:
-        if not str(construction.name()) in constructionCollection:
-            print 'Failed to find {} in constructions.'.format(construction.name())
-            return None, missingConstrCount
+        if vers < 27:
+            if not str(construction.name()) in constructionCollection:
+                print 'Failed to find {} in constructions.'.format(construction.name())
+                return None, missingConstrCount
+            else:
+                return str(construction.name()), missingConstrCount
         else:
-            return str(construction.name()), missingConstrCount
+            if not str(construction.nameString()) in constructionCollection:
+                print 'Failed to find {} in constructions.'.format(construction.nameString())
+                return None, missingConstrCount
+            else:
+                return str(construction.nameString()), missingConstrCount
 
 def updateAdj(surface1, surface2):
     # change roof to ceiling
@@ -249,9 +266,13 @@ if openStudioIsReady and _import and _filepath:
     try:
         model = translator.loadModel(ops.Path(os.path.normpath(_filepath)))
     except TypeError:
-        # OpenStudio 2.6.1
         filepath = ops.OpenStudioUtilitiesCore.toPath(os.path.normpath(_filepath))
-        model = translator.loadModel(ops.Path(filepath))
+        if vers < 27:
+            # OpenStudio 2.6.1
+            model = translator.loadModel(ops.Path(filepath))
+        else:
+            # OpenStudio 2.7.0
+            model = translator.loadModel(filepath)
     errors = translator.errors()
     warnings = translator.warnings()
     if ''.join(errors):
@@ -271,12 +292,21 @@ if openStudioIsReady and _import and _filepath:
     for c in constructions.itervalues():
         if str(c.name()) == 'Air Wall':
             continue
-        constructionCollection[str(c.name())] = getHBConstruction(c, materials)
+        if vers < 27:
+            constructionCollection[str(c.name())] = getHBConstruction(c, materials)
+        else:
+            constructionCollection[str(c.nameString())] = getHBConstruction(c, materials)
         for m in c.layers():
-            assert str(m.handle()) in materials, \
-                '"{}" material from "{}" construction is not in gbXML materials.' \
-                .format(m.name(), c.name())
-            materialCollection[str(m.name())] = getHBMaterial(m)
+            if vers < 27:
+                assert str(m.handle()) in materials, \
+                    '"{}" material from "{}" construction is not in gbXML materials.' \
+                    .format(m.name(), c.name())
+                materialCollection[str(m.name())] = getHBMaterial(m)
+            else:
+                assert str(m.handle()) in materials, \
+                    '"{}" material from "{}" construction is not in gbXML materials.' \
+                    .format(m.nameString(), c.nameString())
+                materialCollection[str(m.nameString())] = getHBMaterial(m)
     
     # list of final HBzones
     zones = []
@@ -305,8 +335,10 @@ if openStudioIsReady and _import and _filepath:
             maxZ = max(p.z() for p in s.vertices())
             srf = EPZoneSurface(getGeometry(s), 1, str(s.name()), getHBSrfType(s))
             construction, missingCcount = getOSSurfaceConstructionName(s, constructionCollection, missingCcount)
+            
             if construction:
                 srf.construction = construction
+                srf.EPConstruction = construction
             
             # store adjacency information
             HsrfName = srf.name

@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_OpenStudio to gbXML"
 ghenv.Component.NickName = 'OpenStudioToXML'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_26_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_30_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -46,6 +46,16 @@ ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
 import os
 import scriptcontext as sc
+
+# check the version of OpenStudio.
+openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
+try:
+    osVersion = openStudioLibFolder.split('-')[-1].split('/')[0]
+    vernum1, vernum2 = osVersion.split('.')[0], osVersion.split('.')[1]
+except:
+    vernum1, vernum2= '1', '0'
+vers = int(vernum1 + vernum2)
+
 
 if sc.sticky.has_key('honeybee_release'):
     if sc.sticky["honeybee_folders"]["OSLibPath"] != None:
@@ -82,9 +92,13 @@ if openStudioIsReady and _export and _filepath and _model:
     try:
         result = translator.modelToGbXML(_model, ops.Path(os.path.normpath(_filepath)))
     except TypeError:
-        # OpenStudio 2.6.1
         filepath = ops.OpenStudioUtilitiesCore.toPath(os.path.normpath(_filepath))
-        result = translator.modelToGbXML(_model, ops.Path(filepath))
+        if vers < 27:
+            # OpenStudio 2.6.1
+            result = translator.modelToGbXML(_model, ops.Path(filepath))
+        else:
+            # OpenStudio 2.7.0
+            result = translator.modelToGbXML(_model, filepath)
     errors = translator.errors()
     warnings = translator.warnings()
     if ''.join(errors):
