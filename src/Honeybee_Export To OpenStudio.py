@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_11_2018'
+ghenv.Component.Message = 'VER 0.0.63\nOCT_31_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3788,17 +3788,15 @@ class WriteOPS(object):
                     
                     # Write HBsystemgenerator photovoltaic generators
                     for PVgen in HBsystemgenerator.PVgenerators:
-                        
                         try:
                             # Get the panel's surface by name from the openstudio model
                             # model.getSurfaces is only zone surfaces
+                            panel_surface = None
                             for opssurface in model.getSurfaces():
-                                
                                 if str(opssurface.name().get()) == str(PVgen.mountedSurface.name):
-                                    
-                                    panel_surface = surface
-                                    
-                            if 'panel_surface' not in locals():
+                                    panel_surface = opssurface
+                            
+                            if panel_surface == None:
                                 # Happens when the mounted surface is not in the zone surfaces
                                 raise UnboundLocalError("Local variable 'panel_surface' referenced before assignment.")
                             
@@ -3860,7 +3858,6 @@ class WriteOPS(object):
                                         if toPythonArray(shdPointVectors) == toPythonArray(shadingSurface.vertices()):
                                             
                                             # If coordinates of Mounted Surface and Context Surface are the same - they are the same surface so mount the surface there
-                                            
                                             pvgenerator = ops.GeneratorPhotovoltaic.simple(model)
                                             pvgenerator.setName(PVgen.name)
                                             pvgenerator.setNumberOfModulesInParallel(PVgen.NOparallel)
@@ -3872,7 +3869,6 @@ class WriteOPS(object):
                                         
                                         
                                 assigned = assignMountingSurface(PVgen,model)
-
                                 if not assigned:
                                     # Shading surface is not in the model yet! So it wasn't connected to HBContext_
                                     # Add it! - copied the code from the function OPSShdSurface - but we didnt need all the function
