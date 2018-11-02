@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_08_2018'
+ghenv.Component.Message = 'VER 0.0.63\nNOV_03_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | Developers"
@@ -56,23 +56,27 @@ import Grasshopper.Folders as folders
 import System
 System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
 
-def removeCurrentHB():
-    UOFolders = folders.ClusterFolders
-    
-    for folder in UOFolders: 
-        fileNames = os.listdir(folder)
-        
-        print 'Removing Honeybee!'
-        for fileName in fileNames:
-            # check for ladybug userObjects and delete the files
-            if fileName.StartsWith('HoneybeePlus'):
-                continue
-            elif fileName.StartsWith('Honeybee'):
-                fullPath = os.path.join(folder, fileName)
-                try:
-                    os.remove(fullPath)
-                except:
-                    'Failed to remove older user objects. New ones will be overwritten but you may have some deprecated components remaining.'
+def removeOldUserObjects(destinationDirectory):
+    print 'Removing Old Version from: {}'.format(destinationDirectory)
+
+    # remove userobjects that are currently removed
+    fileNames = os.listdir(destinationDirectory)
+    for fileName in fileNames:
+        # check for honeybee userObjects and delete the files if they are not
+        # in source anymore
+        fullPath = os.path.join(destinationDirectory, fileName)
+        if os.path.isdir(fullPath):
+            # it's a directory. check inside the directory
+            removeOldUserObjects(fullPath)
+
+        elif fileName.StartsWith('HoneybeePlus'):
+            continue            
+        elif fileName.StartsWith('Honeybee'):
+            try:
+                os.remove(fullPath)
+            except:
+                print('Failed to remove older user object: {}'.format(fileName))
+
 
 def downloadSourceAndUnzip(lb_preparation):
     """
@@ -236,8 +240,10 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
         if userObjectsFolder==None: return "Download failed! Read component output for more information!", False
     else:
         userObjectsFolder = sourceDirectory
-    
-    destinationDirectory = folders.ClusterFolders[0]
+
+    destinationDirectory = os.path.join(folders.ClusterFolders[0], 'Honeybee')
+    if not os.path.isdir(destinationDirectory):
+        os.mkdir(destinationDirectory)
 
     # copy files from source to destination
     if updateAllUObjects:
@@ -248,10 +254,10 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
 
-        srcFiles = os.listdir(userObjectsFolder)
         # Remove Old version...      
-        removeCurrentHB()
+        removeOldUserObjects(folders.ClusterFolders[0])
         print 'Updating...'
+        
         srcFiles = os.listdir(userObjectsFolder)
         for srcFileName in srcFiles:
             # check for ladybug userObjects
