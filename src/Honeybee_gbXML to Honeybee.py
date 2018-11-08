@@ -144,17 +144,17 @@ def getOSSurfaceConstructionName(s, constructionCollection, missingConstrCount =
         return None, missingConstrCount
     else:
         if vers < 27:
-            if not str(construction.name()) in constructionCollection:
+            if not str(construction.name().upper()) in constructionCollection:
                 print 'Failed to find {} in constructions.'.format(construction.name())
                 return None, missingConstrCount
             else:
                 return str(construction.name()), missingConstrCount
         else:
-            if not str(construction.nameString()) in constructionCollection:
+            if not str(construction.nameString().upper()) in constructionCollection:
                 print 'Failed to find {} in constructions.'.format(construction.nameString())
                 return None, missingConstrCount
             else:
-                return str(construction.nameString()), missingConstrCount
+                return str(construction.nameString().upper()), missingConstrCount
 
 def updateAdj(surface1, surface2):
     # change roof to ceiling
@@ -293,21 +293,21 @@ if openStudioIsReady and _import and _filepath:
         if str(c.name()) == 'Air Wall':
             continue
         if vers < 27:
-            constructionCollection[str(c.name())] = getHBConstruction(c, materials)
+            constructionCollection[str(c.name().upper())] = getHBConstruction(c, materials)
         else:
-            constructionCollection[str(c.nameString())] = getHBConstruction(c, materials)
+            constructionCollection[str(c.nameString().upper())] = getHBConstruction(c, materials)
         for m in c.layers():
             if vers < 27:
                 assert str(m.handle()) in materials, \
                     '"{}" material from "{}" construction is not in gbXML materials.' \
                     .format(m.name(), c.name())
-                materialCollection[str(m.name())] = getHBMaterial(m)
+                materialCollection[str(m.name().upper())] = getHBMaterial(m)
             else:
                 assert str(m.handle()) in materials, \
                     '"{}" material from "{}" construction is not in gbXML materials.' \
                     .format(m.nameString(), c.nameString())
-                materialCollection[str(m.nameString())] = getHBMaterial(m)
-    
+                materialCollection[str(m.nameString().upper())] = getHBMaterial(m)
+
     # list of final HBzones
     zones = []
     # dictionary to store boundary consition and adjacency information.
