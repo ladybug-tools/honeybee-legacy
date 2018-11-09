@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_OpenStudio to gbXML"
 ghenv.Component.NickName = 'OpenStudioToXML'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_30_2018'
+ghenv.Component.Message = 'VER 0.0.63\nNOV_09_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -85,6 +85,9 @@ else:
     openStudioIsReady = False
 
 if openStudioIsReady and _export and _filepath and _model:
+    working_dir, file_name = os.path.split(_filepath)
+    if not os.path.isdir(working_dir):
+        os.mkdir(working_dir)
     
     _filepath = _filepath.replace('\\\\', '/').replace('\\', '/')
     translator = ops.GbXMLForwardTranslator()

@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_gbXML to Honeybee"
 ghenv.Component.NickName = 'XMLTOHB'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_30_2018'
+ghenv.Component.Message = 'VER 0.0.63\nNOV_09_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -134,6 +134,11 @@ def getHBSrfType(ossurface):
     if t in srfTypeDict:
         return srfTypeDict[t]
 
+defaultConstructions = ["Interior Ceiling", "Interior Floor",
+                        "Interior Wall", "Interior Window",
+                        "Exterior Floor", "Exterior Roof", "Exterior Wall",
+                        "Exterior Window"]
+
 def getOSSurfaceConstructionName(s, constructionCollection, missingConstrCount = 0):
     construction = s.construction()
     if construction.is_initialized and not construction.isNull():
@@ -144,12 +149,16 @@ def getOSSurfaceConstructionName(s, constructionCollection, missingConstrCount =
         return None, missingConstrCount
     else:
         if vers < 27:
+            if str(construction.name()) in defaultConstructions:
+                return None, missingConstrCount
             if not str(construction.name().upper()) in constructionCollection:
                 print 'Failed to find {} in constructions.'.format(construction.name())
                 return None, missingConstrCount
             else:
-                return str(construction.name()), missingConstrCount
+                return str(construction.name().upper()), missingConstrCount
         else:
+            if str(construction.nameString()) in defaultConstructions:
+                return None, missingConstrCount
             if not str(construction.nameString().upper()) in constructionCollection:
                 print 'Failed to find {} in constructions.'.format(construction.nameString())
                 return None, missingConstrCount
@@ -290,7 +299,7 @@ if openStudioIsReady and _import and _filepath:
     materialCollection = {}
     
     for c in constructions.itervalues():
-        if str(c.name()) == 'Air Wall':
+        if str(c.name()) == 'Air Wall' or str(c.name()) in defaultConstructions:
             continue
         if vers < 27:
             constructionCollection[str(c.name().upper())] = getHBConstruction(c, materials)
@@ -307,7 +316,7 @@ if openStudioIsReady and _import and _filepath:
                     '"{}" material from "{}" construction is not in gbXML materials.' \
                     .format(m.nameString(), c.nameString())
                 materialCollection[str(m.nameString().upper())] = getHBMaterial(m)
-
+    
     # list of final HBzones
     zones = []
     # dictionary to store boundary consition and adjacency information.
@@ -361,6 +370,7 @@ if openStudioIsReady and _import and _filepath:
                 construction, missingCcount = getOSSurfaceConstructionName(ss, constructionCollection, missingCcount)
                 if construction:
                    fenSrf.construction = construction
+                   fenSrf.EPConstruction = construction
                 srf.addChildSrf(fenSrf)
         
         zones.append(hbz)
