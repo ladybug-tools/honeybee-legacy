@@ -370,7 +370,6 @@ if openStudioIsReady and _import and _filepath:
                 construction, missingCcount = getOSSurfaceConstructionName(ss, constructionCollection, missingCcount)
                 if construction:
                    fenSrf.construction = construction
-                   fenSrf.EPConstruction = construction
                 srf.addChildSrf(fenSrf)
         
         zones.append(hbz)
