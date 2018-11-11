@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_30_2018'
+ghenv.Component.Message = 'VER 0.0.63\nNOV_12_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -9457,7 +9457,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"] = {}
         
         # supported versions for EnergyPlus
-        EPVersions = ["V8-9-0", "V9-0-0", "V9-0-1", "V8-9-0", "V8-8-0", \
+        EPVersions = ["V9-0-1", "V9-0-0", "V8-9-0", "V8-8-0", \
                       "V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0", "V8-3-0", "V8-2-10", \
                       "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
@@ -9479,8 +9479,8 @@ if checkIn.letItFly:
         openStudioLibFolder = None
         QtFolder = None
         
-        installedOPS1 = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
-        installedOPS2 = [f for f in os.listdir("C:\\") if f.startswith("openstudio")]
+        installedOPS1 = [f for f in os.listdir("C:\\Program Files") if f.lower().startswith("openstudio")]
+        installedOPS2 = [f for f in os.listdir("C:\\") if f.lower().startswith("openstudio")]
         try:
             installedOPS1 = sorted(installedOPS1, key=getversion, reverse=True)
             installedOPS2 = sorted(installedOPS2, key=getversion, reverse=True)
