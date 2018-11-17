@@ -9658,7 +9658,7 @@ if checkIn.letItFly:
         
         
         # Check for an installation of THERM.
-        THERMVersions = ["7.5","7.6"]
+        THERMVersions = ["7.5", "7.6"]
         THERMVersion = ''
         THERMSettingsFile = ''
         if folders.THERMPath != None:
@@ -9688,7 +9688,8 @@ if checkIn.letItFly:
         if folders.THERMPath == None:
             msg= "Honeybee cannot find a compatible LBNL THERM installation on your system.\n" + \
              "You won't be able to run THERM simulations of heat flow through constructions.\n" + \
-             "You need THERM version 7.5 or above and you can download it from here:"
+             "Only the following versions of THERM are supported: {}".format(THERMVersions) + \
+             "\nDownload supported versions of THERM from:"
             msg2 = "https://windows.lbl.gov/software/therm"
             ghenv.Component.AddRuntimeMessage(w, msg)
             ghenv.Component.AddRuntimeMessage(w, msg2)
