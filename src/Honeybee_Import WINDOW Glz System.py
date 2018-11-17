@@ -23,7 +23,7 @@
 """
 Use this component to import the content of a LBNL WINDOW text file report as a series of polygons and boundary conditions that can be plugged into the "Write THERM File' component.
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
 
     Args:
         _windowGlzSysReport: A filepath to a detailed galzing system text file report exportedby WINDOW.
@@ -61,7 +61,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW Glz System'
 ghenv.Component.NickName = 'importWINDOW'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"

@@ -23,7 +23,7 @@
 """
 Use this component to set Zone Thresholds like daylighting thresholds and setpoints.
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
 
     Args:
         _HBZones: HBZones for which zone thresholds will be set.
@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Thresholds"
 ghenv.Component.NickName = 'setEPZoneThresholds'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_30_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"

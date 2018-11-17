@@ -23,7 +23,7 @@
 """
 Use this component to create a custom THERM material, which can be plugged into the "Honeybee_Create Therm Polygons" component.
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _materialName: A text name for your THERM Material.
@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Therm Material"
 ghenv.Component.NickName = 'ThermMaterial'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"

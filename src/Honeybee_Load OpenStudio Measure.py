@@ -26,7 +26,7 @@ Read more about OpenStudio measures here: http://nrel.github.io/OpenStudio-user-
 You can download several measures from here: https://bcl.nrel.gov/nrel/types/measure
 
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
 
     Args:
         _OSMeasure: Path to measure directory [NOT THE FILE]. This input will be removed once measure is loaded
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_Load OpenStudio Measure"
 ghenv.Component.NickName = 'importOSMeasure'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"

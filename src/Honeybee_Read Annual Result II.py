@@ -24,7 +24,7 @@
 Read Annual Daylight Results II [Daysim]
 
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
 
     Args:
         resultFilesAddress: List of .ill files
@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result II"
 ghenv.Component.NickName = 'readAnnualResultsII'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"

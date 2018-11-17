@@ -24,7 +24,7 @@
 Filter EP Schedule Library
 
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         keywords_: List of keywords to filter the list of materials
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Search EP Schedule Library"
 ghenv.Component.NickName = 'SearchEPSCHLibrary'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"

@@ -23,7 +23,7 @@
 """
 Separate zones based on zone program
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
 
     Args:
         _HBZones: List of HBZones
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = 'Honeybee_Separate Zones By Program'
 ghenv.Component.NickName = 'separateZonesByProgram'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"

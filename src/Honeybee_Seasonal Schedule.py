@@ -39,7 +39,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Seasonal Schedule"
 ghenv.Component.NickName = 'Honeybee_SeasonalSchedule'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_26_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"

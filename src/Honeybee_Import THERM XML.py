@@ -25,7 +25,7 @@ Use this component to read the content of a THERM XML file into Grasshopper.  Th
 _
 At this point in time, U-Factor tags are not supported but all other features should be imported.
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
 
     Args:
         _thermXMLFile: A filepath to a therm XML file on your machine.
@@ -46,7 +46,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Import THERM XML'
 ghenv.Component.NickName = 'importTHERM'
-ghenv.Component.Message = 'VER 0.0.63\nAUG_21_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"

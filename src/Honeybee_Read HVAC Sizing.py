@@ -23,7 +23,7 @@
 """
 This component parses an .eio file from an energy simulation and brings in the sizes of all of the HVAC equipment.
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _eioFile: The file address of the eio file that comes out of the "Honeybee_Lookup EnergyPlus Folder" component.
@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Read HVAC Sizing"
 ghenv.Component.NickName = 'readEio'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

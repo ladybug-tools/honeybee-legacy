@@ -26,7 +26,7 @@ Use this component to set HBZone properties
 By default these values will be automatically calculated by EnergyPlus.
 
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
 
     Args:
         _HBZones: Input HBZones.
@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Set Zone Properties"
 ghenv.Component.NickName = 'setZoneProp'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_01_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"

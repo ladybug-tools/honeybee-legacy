@@ -24,7 +24,7 @@
 Use this component to calculate the ambient resoluation (ar) needed to resolve a detail of a diven dimension in Rhino model units. The full geometry scene of HBObjects is needed to calculate this number accurately
 The resulting ar from this component can be plugged into the Honeybee_RADParameters component.
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _HBObjects: All of the Honeybee objects that are going to be used in the daylight simulation.
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Ambient Resolution"
 ghenv.Component.NickName = 'AR'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"

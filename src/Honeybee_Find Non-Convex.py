@@ -39,7 +39,7 @@ _
 Please visit the following link to know why EnegyPlus does not like non-convex surfaces.
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-simulation-parameters.html#field-solar-distribution
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
 
     Args:
         _breps: A list of breps that you wish to scan for non-convex surfaces
@@ -52,7 +52,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Find Non-Convex"
 ghenv.Component.NickName = 'IsConvex'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_04_2016

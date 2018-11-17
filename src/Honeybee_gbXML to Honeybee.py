@@ -30,7 +30,7 @@ be added to the component eventually.
 You also need to solve adjacencies after importing the zones.
 -
 
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _filepath: Full filepath to xml file.
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_gbXML to Honeybee"
 ghenv.Component.NickName = 'XMLTOHB'
-ghenv.Component.Message = 'VER 0.0.63\nNOV_09_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

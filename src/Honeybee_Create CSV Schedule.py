@@ -25,7 +25,7 @@
 Use this component to write custom .csv schedules for EnergyPlus using a list of numbers that you have in grasshopper.  This can be used to make custom infiltration shcedules based on indoor thermal comdort (to mimic opening of windows), shading transparency shedules based on glare or thermal comfort, etc.
 
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _values: The values to be written into the .csv schedule.
@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Create CSV Schedule"
 ghenv.Component.NickName = 'csvSchedule'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_26_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"

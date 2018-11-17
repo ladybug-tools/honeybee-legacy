@@ -24,7 +24,7 @@
 Use this component to assign OpenStudio Systems to your HBZones.  By default, all HBZones are assigned an Ideal Air Loads system and this component can be used to change this to a real system from the OpenStudioHVACSystemsList component.
 This component is also used to adjust the features of the HVAC system using the _airDetails_, _heatingDetails_, and _coolingDetails_.  Without the inputs to these Details, template OpenStudio systems will be used.
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
 
     Args:
         _HBZones: The HBZones for which you want to change/adjust the HVAC system.
@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Assign HVAC System"
 ghenv.Component.NickName = 'HVACSystem'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_18_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
