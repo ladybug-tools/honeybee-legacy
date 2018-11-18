@@ -5788,14 +5788,13 @@ class hb_reEvaluateHBZones(object):
         # get glaing coordinates- coordinates will be returned as lists of lists
         glzCoordinates = surface.extractGlzPoints(False, 2, pointOrient)
         
-        # make sure order is right
-        #if not isAntiClockWise(surface.coordinatesList, surface.normalVector):
-        #        surface.coordinatesList.reverse()
-
-        
-        for coorList in glzCoordinates:
+        # check that the coordinates are going anticlockwise.
+        for i, coorList in enumerate(glzCoordinates):
             if not isAntiClockWise(coorList, surface.normalVector):
+                # reverse the list of coordinates
                 coorList.reverse()
+                # Shift the list by 1 to make sure that the starting point is still in the correct corner (ie. LowerLeft).
+                glzCoordinates[i] = coorList[-1:] + coorList[:-1]
         
         glzSrfs = []
         if surface.isPlanar:
