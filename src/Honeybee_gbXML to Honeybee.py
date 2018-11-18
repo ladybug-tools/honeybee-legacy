@@ -60,7 +60,10 @@ import scriptcontext as sc
 import Rhino as rc
 
 # check the version of OpenStudio.
-openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
+try:
+    openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
+except:
+    pass
 try:
     osVersion = openStudioLibFolder.split('-')[-1].split('/')[0]
     vernum1, vernum2 = osVersion.split('.')[0], osVersion.split('.')[1]
