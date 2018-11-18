@@ -23,11 +23,11 @@
 """
 Import gbXML files as Honeybee zones.
 
-This component uses OpenStudio libraries to import the file and at this point
-the component imports geometry and constrcuctions(if available). Loads and schedules may 
-be added to the component eventually.
+This component uses OpenStudio libraries to import all geometry, constrcuctions,
+and boundary conditions (including adjacencies).
 
-You also need to solve adjacencies after importing the zones.
+Loads, schedules, and HVAC systems are not currently imported by this component
+and must be reassigned using Honeybee components.
 -
 
 Provided by Honeybee 0.0.64
