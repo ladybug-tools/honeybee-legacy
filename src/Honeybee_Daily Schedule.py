@@ -23,7 +23,7 @@
 """
 Use this component to make daily schedules for "Honeybee_AnnualSchedule". This component works with the native Grasshopper Gene Pool.
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _genePool: Input Galapagos Gene Pool
@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Daily Schedule"
 ghenv.Component.NickName = 'DailySchedule'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"

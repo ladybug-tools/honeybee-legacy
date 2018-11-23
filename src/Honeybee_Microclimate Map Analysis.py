@@ -25,7 +25,7 @@
 Use this component runs an annual comfort assessment off of EnergyPlus results and write all values into csv files.
 The results in these files can be used for creating indoor comfort maps.
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _comfAnalysisRecipe: A comfort analysis recipe out of one of the comfort recipe component.
@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

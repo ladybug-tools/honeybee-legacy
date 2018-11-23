@@ -36,7 +36,7 @@ along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
 Source code is available at: https://github.com/mostaphaRoudsari/Honeybee
 
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         defaultFolder_: Optional input for Honeybee default folder.
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_30_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5788,14 +5788,13 @@ class hb_reEvaluateHBZones(object):
         # get glaing coordinates- coordinates will be returned as lists of lists
         glzCoordinates = surface.extractGlzPoints(False, 2, pointOrient)
         
-        # make sure order is right
-        #if not isAntiClockWise(surface.coordinatesList, surface.normalVector):
-        #        surface.coordinatesList.reverse()
-
-        
-        for coorList in glzCoordinates:
+        # check that the coordinates are going anticlockwise.
+        for i, coorList in enumerate(glzCoordinates):
             if not isAntiClockWise(coorList, surface.normalVector):
+                # reverse the list of coordinates
                 coorList.reverse()
+                # Shift the list by 1 to make sure that the starting point is still in the correct corner (ie. LowerLeft).
+                glzCoordinates[i] = coorList[-1:] + coorList[:-1]
         
         glzSrfs = []
         if surface.isPlanar:
@@ -9457,7 +9456,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"] = {}
         
         # supported versions for EnergyPlus
-        EPVersions = ["V8-9-0", "V9-0-0", "V9-0-1", "V8-9-0", "V8-8-0", \
+        EPVersions = ["V9-0-1", "V9-0-0", "V8-9-0", "V8-8-0", \
                       "V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0", "V8-3-0", "V8-2-10", \
                       "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
@@ -9479,8 +9478,8 @@ if checkIn.letItFly:
         openStudioLibFolder = None
         QtFolder = None
         
-        installedOPS1 = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
-        installedOPS2 = [f for f in os.listdir("C:\\") if f.startswith("openstudio")]
+        installedOPS1 = [f for f in os.listdir("C:\\Program Files") if f.lower().startswith("openstudio")]
+        installedOPS2 = [f for f in os.listdir("C:\\") if f.lower().startswith("openstudio")]
         try:
             installedOPS1 = sorted(installedOPS1, key=getversion, reverse=True)
             installedOPS2 = sorted(installedOPS2, key=getversion, reverse=True)
@@ -9658,7 +9657,7 @@ if checkIn.letItFly:
         
         
         # Check for an installation of THERM.
-        THERMVersions = ["7.5","7.6"]
+        THERMVersions = ["7.5", "7.6"]
         THERMVersion = ''
         THERMSettingsFile = ''
         if folders.THERMPath != None:
@@ -9688,7 +9687,8 @@ if checkIn.letItFly:
         if folders.THERMPath == None:
             msg= "Honeybee cannot find a compatible LBNL THERM installation on your system.\n" + \
              "You won't be able to run THERM simulations of heat flow through constructions.\n" + \
-             "You need THERM version 7.5 or above and you can download it from here:"
+             "Only the following versions of THERM are supported: {}".format(THERMVersions) + \
+             "\nDownload supported versions of THERM from:"
             msg2 = "https://windows.lbl.gov/software/therm"
             ghenv.Component.AddRuntimeMessage(w, msg)
             ghenv.Component.AddRuntimeMessage(w, msg2)

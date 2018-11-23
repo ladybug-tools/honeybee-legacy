@@ -26,7 +26,7 @@ _
 This component reads only the results related to Honeybee generation systems.  For other results related to zones, you should use the "Honeybee_Read EP Result" for HVAC use the "Honeybee_Read EP HVAC Result" component and, for results related to surfaces, you should use the "Honeybee_Read EP Surface Result" component.
 
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
@@ -52,7 +52,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Read_generation_system_results"
 ghenv.Component.NickName = 'readEP_analyse_generation_system_results'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_11_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

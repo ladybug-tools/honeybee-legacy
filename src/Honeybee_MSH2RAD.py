@@ -23,7 +23,7 @@
 """
 Convert a mesh to RAD file
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _mesh: List of meshes
@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_MSH2RAD"
 ghenv.Component.NickName = 'MSH2RAD'
-ghenv.Component.Message = 'VER 0.0.63\nSEP_26_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"

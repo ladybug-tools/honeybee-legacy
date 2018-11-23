@@ -33,7 +33,7 @@ Soil Conductivity - http://www.engineeringtoolbox.com/thermal-conductivity-d_429
 Soil Density - http://www.engineeringtoolbox.com/dirt-mud-densities-d_1727.html
 Soil Heat Capacity - http://www.engineeringtoolbox.com/specific-heat-capacity-d_391.html
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
 
     Args:
         _HBZones: HBZones to be turned into ground zones, representative of soil.
@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Create EP Ground"
 ghenv.Component.NickName = 'createEPGround'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"

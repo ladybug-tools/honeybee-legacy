@@ -26,7 +26,7 @@ _
 The component is built to bring in any result that you desire from the csv using _keywords to search through all of the results in the file.  As such, this is particularly useful when you have requested atypical E+ outputs using the "Honeybee_Read Result Dictionary" component.
 
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _resultFileAddress: The result file address that comes out of the "Export to OpenStudio" component.
@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Read EP Custom Result"
 ghenv.Component.NickName = 'EPCustomResult'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

@@ -45,7 +45,7 @@ import scriptcontext as sc
 
 ghenv.Component.Name = "Honeybee_IES Project"
 ghenv.Component.NickName = 'iesProject'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"
 #compatibleHBVersion = VER 0.0.56\nJUL_01_2016

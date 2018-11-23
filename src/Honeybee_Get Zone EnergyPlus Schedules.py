@@ -23,7 +23,7 @@
 """
 Look up schedules for a Honeybee Zone
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
 
     Args:
         _HBZone: Honeybee zone
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Get Zone EnergyPlus Schedules"
 ghenv.Component.NickName = 'getHBZoneEPSchedules'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "05 | Energy | Building Program"

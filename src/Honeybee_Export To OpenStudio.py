@@ -25,7 +25,7 @@ Use this component to export HBZones into an OpenStudio file, and run them throu
 _
 The component outputs the report from the simulation, the file path of the IDF file, and the CSV result file from the EnergyPlus run, and two other result files that record outputs in different formats.
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_31_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3806,6 +3806,9 @@ class WriteOPS(object):
                             pvgenerator.setNumberOfModulesInParallel(PVgen.NOparallel)
                             pvgenerator.setNumberOfModulesInSeries(PVgen.NOseries)
                             pvgenerator.setSurface(panel_surface)
+                            pv_perform = pvgenerator.photovoltaicPerformance()
+                            pv_perform.setString(2, str(PVgen.surfaceareacells))
+                            pv_perform.setString(4, str(PVgen.efficiency))
                             elcd.addGenerator(pvgenerator)
                             
                             self.generatorCosts.append('PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
@@ -3823,7 +3826,6 @@ class WriteOPS(object):
                                 assigned = False
                                 
                                 def assignMountingSurface(PVgen,model):
-                                
                                     for shadingSurface in model.getShadingSurfaces():
                                         
                                         def coordinatesOfMountedSurface(PVgen):
@@ -3838,37 +3840,37 @@ class WriteOPS(object):
                                             for shadingCount, ptList in enumerate(coordinates):
                                                 for pt in ptList:
                                                     # add the points to an openStudio list
-                                                    shdPointVectors.Add(ops.Point3d(pt.X,pt.Y,pt.Z))
+                                                    shdPointVectors.Add(ops.Point3d(round(pt.X, 3), round(pt.Y, 3), round(pt.Z, 3)))
                                                     
                                             return shdPointVectors
                                                     
-                                        def toPythonArray(vector):
+                                        def toPythonArray(shdsrfvert):
                                             # for some reason the equals in OpenStudio arrays dont compare
                                             # for this reason extract out all the points for a comparision
                                             allPoints = []
                                             
-                                            for point in shadingSurface.vertices():
-        
-                                                allPoints.append([point.x(),point.y(),point.z()])
+                                            for point in shdsrfvert:
+                                                allPoints.append([round(point.x(),3), round(point.y(), 3), round(point.z(),3)])
                                                 
                                             return allPoints
-                                            
-                                        shdPointVectors = coordinatesOfMountedSurface(PVgen)
                                         
+                                        shdPointVectors = coordinatesOfMountedSurface(PVgen)
                                         if toPythonArray(shdPointVectors) == toPythonArray(shadingSurface.vertices()):
-                                            
                                             # If coordinates of Mounted Surface and Context Surface are the same - they are the same surface so mount the surface there
                                             pvgenerator = ops.GeneratorPhotovoltaic.simple(model)
                                             pvgenerator.setName(PVgen.name)
                                             pvgenerator.setNumberOfModulesInParallel(PVgen.NOparallel)
                                             pvgenerator.setNumberOfModulesInSeries(PVgen.NOseries)
                                             pvgenerator.setSurface(shadingSurface)
+                                            pv_perform = pvgenerator.photovoltaicPerformance()
+                                            pv_perform.setString(2, str(PVgen.surfaceareacells))
+                                            pv_perform.setString(4, str(PVgen.efficiency))
                                             elcd.addGenerator(pvgenerator)
-
                                             return True
-                                        
-                                        
+                                    return False
+                                
                                 assigned = assignMountingSurface(PVgen,model)
+                                
                                 if not assigned:
                                     # Shading surface is not in the model yet! So it wasn't connected to HBContext_
                                     # Add it! - copied the code from the function OPSShdSurface - but we didnt need all the function

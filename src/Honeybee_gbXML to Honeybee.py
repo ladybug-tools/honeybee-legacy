@@ -23,14 +23,14 @@
 """
 Import gbXML files as Honeybee zones.
 
-This component uses OpenStudio libraries to import the file and at this point
-the component imports geometry and constrcuctions(if available). Loads and schedules may 
-be added to the component eventually.
+This component uses OpenStudio libraries to import all geometry, constrcuctions,
+and boundary conditions (including adjacencies).
 
-You also need to solve adjacencies after importing the zones.
+Loads, schedules, and HVAC systems are not currently imported by this component
+and must be reassigned using Honeybee components.
 -
 
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _filepath: Full filepath to xml file.
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_gbXML to Honeybee"
 ghenv.Component.NickName = 'XMLTOHB'
-ghenv.Component.Message = 'VER 0.0.63\nOCT_30_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -60,7 +60,10 @@ import scriptcontext as sc
 import Rhino as rc
 
 # check the version of OpenStudio.
-openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
+try:
+    openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
+except:
+    pass
 try:
     osVersion = openStudioLibFolder.split('-')[-1].split('/')[0]
     vernum1, vernum2 = osVersion.split('.')[0], osVersion.split('.')[1]
@@ -134,6 +137,11 @@ def getHBSrfType(ossurface):
     if t in srfTypeDict:
         return srfTypeDict[t]
 
+defaultConstructions = ["Interior Ceiling", "Interior Floor",
+                        "Interior Wall", "Interior Window",
+                        "Exterior Floor", "Exterior Roof", "Exterior Wall",
+                        "Exterior Window"]
+
 def getOSSurfaceConstructionName(s, constructionCollection, missingConstrCount = 0):
     construction = s.construction()
     if construction.is_initialized and not construction.isNull():
@@ -144,12 +152,16 @@ def getOSSurfaceConstructionName(s, constructionCollection, missingConstrCount =
         return None, missingConstrCount
     else:
         if vers < 27:
+            if str(construction.name()) in defaultConstructions:
+                return None, missingConstrCount
             if not str(construction.name().upper()) in constructionCollection:
                 print 'Failed to find {} in constructions.'.format(construction.name())
                 return None, missingConstrCount
             else:
-                return str(construction.name()), missingConstrCount
+                return str(construction.name().upper()), missingConstrCount
         else:
+            if str(construction.nameString()) in defaultConstructions:
+                return None, missingConstrCount
             if not str(construction.nameString().upper()) in constructionCollection:
                 print 'Failed to find {} in constructions.'.format(construction.nameString())
                 return None, missingConstrCount
@@ -290,7 +302,7 @@ if openStudioIsReady and _import and _filepath:
     materialCollection = {}
     
     for c in constructions.itervalues():
-        if str(c.name()) == 'Air Wall':
+        if str(c.name()) == 'Air Wall' or str(c.name()) in defaultConstructions:
             continue
         if vers < 27:
             constructionCollection[str(c.name().upper())] = getHBConstruction(c, materials)
@@ -307,7 +319,7 @@ if openStudioIsReady and _import and _filepath:
                     '"{}" material from "{}" construction is not in gbXML materials.' \
                     .format(m.nameString(), c.nameString())
                 materialCollection[str(m.nameString().upper())] = getHBMaterial(m)
-
+    
     # list of final HBzones
     zones = []
     # dictionary to store boundary consition and adjacency information.

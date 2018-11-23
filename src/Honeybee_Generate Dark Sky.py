@@ -24,7 +24,7 @@
 This component generates a dark sky with 0 illuminance.
 It's useful for lighting (and not daylighting) simulation with honeybee.
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Returns:
         skyFilePath: Sky file location on the local drive
@@ -33,7 +33,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Generate Dark Sky"
 ghenv.Component.NickName = 'genDarkSky'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"

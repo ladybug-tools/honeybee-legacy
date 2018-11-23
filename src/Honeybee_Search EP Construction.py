@@ -25,7 +25,7 @@
 Search EnergyPlus construction based on Energy modeling standards, climate zone, surface type and building program
 
 -
-Provided by Honeybee 0.0.63
+Provided by Honeybee 0.0.64
     
     Args:
         _EPConstrList: List of EPConstructions from Honeybee construction library
@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Search EP Construction"
 ghenv.Component.NickName = 'searchEPConstruction'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
