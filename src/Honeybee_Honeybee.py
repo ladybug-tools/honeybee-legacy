@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nDEC_05_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5755,7 +5755,22 @@ class hb_reEvaluateHBZones(object):
             insetPts.append(newPt)
         
         return insetPts
-            
+    
+    def isAntiClockWise(self, pts, faceNormal):
+        
+        def crossProduct(vector1, vector2):
+            return vector1.X * vector2.X + vector1.Y * vector2.Y + vector1.Z * vector2.Z
+        
+        # check if the order if clock-wise
+        vector0 = rc.Geometry.Vector3d(pts[1]- pts[0])
+        vector1 = rc.Geometry.Vector3d(pts[-1]- pts[0])
+        ptsNormal = rc.Geometry.Vector3d.CrossProduct(vector0, vector1)
+        
+        # in case points are anti-clockwise then normals should be parallel
+        if crossProduct(ptsNormal, faceNormal) > 0:
+            return True
+        return False
+    
     def checkChildSurfaces(self, surface, pointOrient = 'LowerLeftCorner'):
         def isRectangle(ptList):
             vector1 = rc.Geometry.Vector3d(ptList[0] - ptList[1])
@@ -5770,27 +5785,12 @@ class hb_reEvaluateHBZones(object):
             else:
                 return True
         
-        def isAntiClockWise(pts, faceNormal):
-            
-            def crossProduct(vector1, vector2):
-                return vector1.X * vector2.X + vector1.Y * vector2.Y + vector1.Z * vector2.Z
-            
-            # check if the order if clock-wise
-            vector0 = rc.Geometry.Vector3d(pts[1]- pts[0])
-            vector1 = rc.Geometry.Vector3d(pts[-1]- pts[0])
-            ptsNormal = rc.Geometry.Vector3d.CrossProduct(vector0, vector1)
-            
-            # in case points are anti-clockwise then normals should be parallel
-            if crossProduct(ptsNormal, faceNormal) > 0:
-                return True
-            return False
-        
         # get glaing coordinates- coordinates will be returned as lists of lists
         glzCoordinates = surface.extractGlzPoints(False, 2, pointOrient)
         
         # check that the coordinates are going anticlockwise.
         for i, coorList in enumerate(glzCoordinates):
-            if not isAntiClockWise(coorList, surface.normalVector):
+            if not self.isAntiClockWise(coorList, surface.normalVector):
                 # reverse the list of coordinates
                 coorList.reverse()
                 # Shift the list by 1 to make sure that the starting point is still in the correct corner (ie. LowerLeft).
@@ -5821,6 +5821,7 @@ class hb_reEvaluateHBZones(object):
                     
                     # create glazing surface
                     HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(child, surface, glzSurfaceName, count, coordinates)
+                    HBGlzSrf.normalVector = surface.normalVector
                     
                     # create adjacent glazingin case needed
                     if surface.BC.upper() == 'SURFACE':
@@ -5955,6 +5956,12 @@ class hb_reEvaluateHBZones(object):
             coordinatesL = surface.extractPoints(1, False, None, self.pointOrient)
         else:
             coordinatesL = surface.coordinates
+        
+        if not self.isAntiClockWise(coordinatesL, surface.normalVector):
+            # reverse the list of coordinates
+            coordinatesL.reverse()
+            # Shift the list by 1 to make sure that the starting point is still in the correct corner (ie. LowerLeft).
+            coordinatesL = coordinatesL[-1:] + coordinatesL[:-1]
         
         # case 0 : it is a planar surface so it is all fine
         if not hasattr(coordinatesL[0], '__iter__'):
