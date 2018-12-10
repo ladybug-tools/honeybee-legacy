@@ -5957,14 +5957,14 @@ class hb_reEvaluateHBZones(object):
         else:
             coordinatesL = surface.coordinates
         
-        if not self.isAntiClockWise(coordinatesL, surface.normalVector):
-            # reverse the list of coordinates
-            coordinatesL.reverse()
-            # Shift the list by 1 to make sure that the starting point is still in the correct corner (ie. LowerLeft).
-            coordinatesL = coordinatesL[-1:] + coordinatesL[:-1]
-        
         # case 0 : it is a planar surface so it is all fine
         if not hasattr(coordinatesL[0], '__iter__'):
+            if not self.isAntiClockWise(coordinatesL, surface.normalVector):
+                # reverse the list of coordinates
+                coordinatesL.reverse()
+                # Shift the list by 1 to make sure that the starting point is still in the correct corner (ie. LowerLeft).
+                coordinatesL = coordinatesL[-1:] + coordinatesL[:-1]
+            
             # it is a single surface so just let it go to the modified list
             surface.coordinates = coordinatesL
             self.modifiedSrfsNames.append(surface.name)
