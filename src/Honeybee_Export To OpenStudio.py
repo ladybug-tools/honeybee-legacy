@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.64\nDEC_6_2018'
+ghenv.Component.Message = 'VER 0.0.64\nDEC_10_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1948,37 +1948,56 @@ class WriteOPS(object):
                     for surface in space.surfaces:
                         srfConstruction = surface.construction().get()
                         constrName = str(srfConstruction.name())
-                        materialNames, comments, UVSI, UVIP = self.hb_EPMaterialAUX.decomposeEPCnstr(constrName)
-                        if 'INTERNAL SOURCE' in str(materialNames).upper():
-                            customRadFound = True
-                            try:
-                                surface.setConstruction(radConstructions[constrName])
-                            except:
-                                # create an empty vector to collect the materials
-                                layers = []
-                                sourceLoc = 1
-                                for count, materialName in enumerate(materialNames):
-                                    # check if the material has been already produced
-                                    if materialName.upper() == 'INTERNAL SOURCE':
-                                        sourceLoc = count
-                                    elif not self.isMaterialInLib(materialName):
-                                        # create an openstudio material for EP material
-                                        OSMaterial = self.getOSMaterial(materialName, model)
-                                        layers.append(OSMaterial)
-                                        self.addMaterialToLib(materialName, OSMaterial)
-                                    else:
-                                        # material has been already created so let's just use it
-                                        layers.append(self.getMaterialFromLib(materialName))
-                                
-                                materials = ops.MaterialVector()
-                                for OSMaterial in layers:
-                                    materials.Add(OSMaterial)
-                                radiantSrf = ops.ConstructionWithInternalSource(model)
-                                radiantSrf.setName(constrName)
-                                radiantSrf.setLayers(materials)
-                                radiantSrf.setSourcePresentAfterLayerNumber(sourceLoc)
-                                surface.setConstruction(radiantSrf)
-                                radConstructions[constrName] = radiantSrf
+                        if not  '_REVERSED' in constrName:
+                            materialNames, comments, UVSI, UVIP = self.hb_EPMaterialAUX.decomposeEPCnstr(constrName)
+                            if 'INTERNAL SOURCE' in str(materialNames).upper():
+                                customRadFound = True
+                                adjacentSrf = None
+                                if surface.adjacentSurface().is_initialized():
+                                    adjacentSrf = surface.adjacentSurface().get()
+                                try:
+                                    surface.setConstruction(radConstructions[constrName])
+                                    if adjacentSrf is not None:
+                                        adjacentSrf.setConstruction(radConstructions[constrName + '_REVERSED'])
+                                except:
+                                    # create an empty vector to collect the materials
+                                    layers = []
+                                    sourceLoc = 1
+                                    for count, materialName in enumerate(materialNames):
+                                        # check if the material has been already produced
+                                        if materialName.upper() == 'INTERNAL SOURCE':
+                                            sourceLoc = count
+                                        elif not self.isMaterialInLib(materialName):
+                                            # create an openstudio material for EP material
+                                            OSMaterial = self.getOSMaterial(materialName, model)
+                                            layers.append(OSMaterial)
+                                            self.addMaterialToLib(materialName, OSMaterial)
+                                        else:
+                                            # material has been already created so let's just use it
+                                            layers.append(self.getMaterialFromLib(materialName))
+                                    
+                                    materials = ops.MaterialVector()
+                                    for OSMaterial in layers:
+                                        materials.Add(OSMaterial)
+                                    radiantSrf = ops.ConstructionWithInternalSource(model)
+                                    radiantSrf.setName(constrName)
+                                    radiantSrf.setLayers(materials)
+                                    radiantSrf.setSourcePresentAfterLayerNumber(sourceLoc)
+                                    surface.setConstruction(radiantSrf)
+                                    radConstructions[constrName] = radiantSrf
+                                    
+                                    if adjacentSrf is not None:
+                                        sourceLoc_rev = len(layers) - sourceLoc
+                                        materials_rev = ops.MaterialVector()
+                                        layers.reverse()
+                                        for OSMaterial in layers:
+                                            materials_rev.Add(OSMaterial)
+                                        radiantSrf_rev = ops.ConstructionWithInternalSource(model)
+                                        radiantSrf_rev.setName(constrName + '_REVERSED')
+                                        radiantSrf_rev.setLayers(materials_rev)
+                                        radiantSrf_rev.setSourcePresentAfterLayerNumber(sourceLoc_rev)
+                                        adjacentSrf.setConstruction(radiantSrf_rev)
+                                        radConstructions[constrName+ '_REVERSED'] = radiantSrf_rev
             if 'WSHP' in equipList:
                 # create water source heat pump and attach to heat pump loop
                 # create fan
