@@ -1,22 +1,22 @@
 #
 # Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
-# 
+#
 # This file is part of Honeybee.
-# 
-# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
-# Honeybee is free software; you can redistribute it and/or modify 
-# it under the terms of the GNU General Public License as published 
-# by the Free Software Foundation; either version 3 of the License, 
-# or (at your option) any later version. 
-# 
+#
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>
+# Honeybee is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published
+# by the Free Software Foundation; either version 3 of the License,
+# or (at your option) any later version.
+#
 # Honeybee is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of 
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
-# 
+#
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 
@@ -58,9 +58,9 @@ tol = sc.doc.ModelAbsoluteTolerance
 
 def intersectMasses(bldgNum, building, otherBldg):
     changed = False
-
     joinedLines = []
-    i = 0
+
+    # prevent dead loop, will break when no more intersection detected
     for i in range(500):
         tempBldg = building.Duplicate()
         for face1 in building.Faces:
@@ -81,7 +81,7 @@ def intersectMasses(bldgNum, building, otherBldg):
             if len(joinedLines) > 0:
                 newBrep = face1.Split(joinedLines, tol) # return None on Failure
                 if not newBrep: continue
-                if newBrep.Faces.Count > building.Faces.Count: 
+                if newBrep.Faces.Count > building.Faces.Count:
                     changed = True
                     building = newBrep
                     break
@@ -97,7 +97,7 @@ def main(bldgMassesBefore):
     for bldgCount, bldg in enumerate(bldgMassesBefore):
         buildingDict[bldgCount] = bldg
     need_change = deque(buildingDict.keys())
-    
+
     i = 0 # to prevent dead loop
     while(len(need_change) > 0 and i < 10e2*len(bldgMassesBefore)):
         bldgNum = need_change.pop()
@@ -128,7 +128,7 @@ if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release')
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         success = False
-    
+
     if success == True:
         hb_hive = sc.sticky["honeybee_Hive"]()
         try:
@@ -136,7 +136,7 @@ if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release')
                 zone = hb_hive.callFromHoneybeeHive([HZone])[0]
                 Hzones = True
         except: pass
-    
+
     if Hzones == True:
         warning = "This component only works with raw Rhino brep geometry and not HBZones.  Use this component before you turn your breps into HBZones."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -146,5 +146,6 @@ else:
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, warning)
 
-if _bldgMassesBefore and _bldgMassesBefore[0]!=None and Hzones == False:
+# add an compile toggle, set _compile to True to run the function
+if _bldgMassesBefore and _bldgMassesBefore[0]!=None and Hzones == False and _compile:
     bldgMassesAfter = main(_bldgMassesBefore)
