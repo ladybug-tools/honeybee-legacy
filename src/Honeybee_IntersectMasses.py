@@ -33,6 +33,7 @@ Provided by Honeybee 0.0.64
 
     Args:
         bldgMassesBefore: A list of closed breps (polysurfaces) that you intend to turn into HBZones that do not have perfectly matching surfaces between adjacent zones (this matching is needed to contruct a correct multi-zone energy model).
+        _runIt: Set to "True" to run the function.
     Returns:
         bldgMassesAfter: The same input closed breps that have had their component surfaces split by adjacent polysurfaces to have matching surfaces between adjacent breps.  It is recommended that you bake this output and check it in Rhino before turning the breps into HBZones.
 """
@@ -147,5 +148,5 @@ else:
     ghenv.Component.AddRuntimeMessage(w, warning)
 
 # add an compile toggle, set _compile to True to run the function
-if _bldgMassesBefore and _bldgMassesBefore[0]!=None and Hzones == False and _compile:
+if _bldgMassesBefore and _bldgMassesBefore[0]!=None and Hzones == False and _runIt:
     bldgMassesAfter = main(_bldgMassesBefore)
