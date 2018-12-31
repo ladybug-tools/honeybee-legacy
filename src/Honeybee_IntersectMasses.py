@@ -60,9 +60,10 @@ tol = sc.doc.ModelAbsoluteTolerance
 def intersectMasses(bldgNum, building, otherBldg):
     changed = False
     joinedLines = []
+    done = False # keep looking until done is True
 
     # prevent dead loop, will break when no more intersection detected
-    for i in range(500):
+    while(not done):
         tempBldg = building.Duplicate()
         for face1 in building.Faces:
             if face1.IsSurface:
@@ -87,7 +88,7 @@ def intersectMasses(bldgNum, building, otherBldg):
                     building = newBrep
                     break
         if tempBldg.Faces.Count == building.Faces.Count:
-            break
+            done = True
     return building, changed
 
 
