@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.64\nDEC_10_2018'
+ghenv.Component.Message = 'VER 0.0.64\nJAN_08_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3621,24 +3621,25 @@ class WriteOPS(object):
             internalMass.setSpace(space)
     
     def setLightingDefinition(self, zone, space, model):
-        if zone.lightingDensityPerArea not in self.lightingList.keys():
-            lightsDefinition = ops.LightsDefinition(model)
-            lightsDefinition.setName(zone.name + "_LightsDefinition")
-            flrArea = zone.getFloorArea(True)
-            lightsDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
-            lightsDefinition.setWattsperSpaceFloorArea(float(zone.lightingDensityPerArea))
-            self.lightingList[zone.lightingDensityPerArea] = lightsDefinition
-        else:
-            lightsDefinition = self.lightingList[zone.lightingDensityPerArea]
-        
-        spaceType = space.spaceType.get()
-        spaceName = str(spaceType.name())
-        if spaceName not in self.lightList:
-            lights = ops.Lights(lightsDefinition)
-            lights.setName(spaceName + "_LightsObject")
-            lights.setSchedule(self.getOSSchedule(zone.lightingSchedule, model))
-            lights.setSpaceType(spaceType)
-            self.lightList.append(spaceName)
+        if zone.lightingDensityPerArea != 0:
+            if zone.lightingDensityPerArea not in self.lightingList.keys():
+                lightsDefinition = ops.LightsDefinition(model)
+                lightsDefinition.setName(zone.name + "_LightsDefinition")
+                flrArea = zone.getFloorArea(True)
+                lightsDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
+                lightsDefinition.setWattsperSpaceFloorArea(float(zone.lightingDensityPerArea))
+                self.lightingList[zone.lightingDensityPerArea] = lightsDefinition
+            else:
+                lightsDefinition = self.lightingList[zone.lightingDensityPerArea]
+            
+            spaceType = space.spaceType.get()
+            spaceName = str(spaceType.name())
+            if spaceName not in self.lightList:
+                lights = ops.Lights(lightsDefinition)
+                lights.setName(spaceName + "_LightsObject")
+                lights.setSchedule(self.getOSSchedule(zone.lightingSchedule, model))
+                lights.setSpaceType(spaceType)
+                self.lightList.append(spaceName)
     
     def setEquipmentDefinition(self, zone, space, model):
         if zone.equipmentLoadPerArea != 0:
