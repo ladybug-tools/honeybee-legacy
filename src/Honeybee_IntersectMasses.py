@@ -1,22 +1,22 @@
 #
 # Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
-#
+# 
 # This file is part of Honeybee.
-#
-# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>
-# Honeybee is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published
-# by the Free Software Foundation; either version 3 of the License,
-# or (at your option) any later version.
-#
+# 
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
 # Honeybee is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
 # GNU General Public License for more details.
-#
+# 
 # You should have received a copy of the GNU General Public License
 # along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
-#
+# 
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 
@@ -33,13 +33,12 @@ Provided by Honeybee 0.0.64
 
     Args:
         bldgMassesBefore: A list of closed breps (polysurfaces) that you intend to turn into HBZones that do not have perfectly matching surfaces between adjacent zones (this matching is needed to contruct a correct multi-zone energy model).
-        _runIt: Set to "True" to run the function.
     Returns:
         bldgMassesAfter: The same input closed breps that have had their component surfaces split by adjacent polysurfaces to have matching surfaces between adjacent breps.  It is recommended that you bake this output and check it in Rhino before turning the breps into HBZones.
 """
 ghenv.Component.Name = "Honeybee_IntersectMasses"
 ghenv.Component.NickName = 'IntersectMass'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018\nlarryv2'
+ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -76,8 +75,8 @@ def intersectMasses(bldgNum, building, otherBldg):
                 for ix in edgesIdx:
                     edges.append(building.Edges.Item[ix])
                 crv = rc.Geometry.Curve.JoinCurves(edges, tol)
-                # potential bug - a surface has made of multiple crvs, but not likely
-                intersectLines = rc.Geometry.Intersect.Intersection.BrepBrep(rc.Geometry.Brep.CreatePlanarBreps(crv[0])[0], otherBldg, tol)[1]
+                # potential bugs: multiple brep of one face?
+                intersectLines = rc.Geometry.Intersect.Intersection.BrepBrep(rc.Geometry.Brep.CreatePlanarBreps(crv)[0], otherBldg, tol)[1]
             temp = rc.Geometry.Curve.JoinCurves(intersectLines, tol)
             joinedLines = [crv for crv in temp if rc.Geometry.Brep.CreatePlanarBreps(crv)]
             if len(joinedLines) > 0:
