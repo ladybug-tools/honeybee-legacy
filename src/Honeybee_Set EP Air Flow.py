@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nJAN_10_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -494,7 +494,7 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                             rc.Geometry.Brep.Append(fullWindowBrep, brep)
                         glzBB = rc.Geometry.Brep.GetBoundingBox(fullWindowBrep, rc.Geometry.Plane.WorldXY)
                         glzHeight = glzBB.Max.Z - glzBB.Min.Z
-                        glzHeights.append(glzHeight)
+                        glzHeights.append(glzHeight * sc.sticky["honeybee_ConversionFactor"])
                     
                     #Assign the opening area and height to the zone.
                     for glzCount, glazedArea in enumerate(glazedAreas):
