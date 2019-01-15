@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.64\nJAN_14_2018'
+ghenv.Component.Message = 'VER 0.0.64\nJAN_14_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
