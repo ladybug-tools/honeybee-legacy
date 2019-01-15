@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.64\nDEC_05_2018'
+ghenv.Component.Message = 'VER 0.0.64\nJAN_14_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -2685,7 +2685,7 @@ class hb_WriteRADAUX(object):
             self.radParameters["_as_"] = 20
             print "-as is set to 20."
         
-        if self.radParameters["_ar_"] < 300:
+        if self.radParameters["_ar_"] != 0 and self.radParameters["_ar_"] < 300:
             # setting up the ar to 300 is tricky but I'm pretty sure in many
             # cases there will shadings involved.
             self.radParameters["_ar_"] = 300
