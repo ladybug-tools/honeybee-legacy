@@ -32,6 +32,7 @@ Provided by Honeybee 0.0.64
         altBC_: An optional alternate boundary condition such as "Adiabatic".  The default will be "Surafce", which ensures that heat flows across each adjacent surface to a neighboring zone.
         tolerance_: The tolerance in Rhino model units that will be used determine whether two zones are adjacent to each other.  If no value is input here, the component will use the tolerance of the Rhino model document.
         removeCurrentAdjc_: If you are using this component after already solving for the adjacencies between some of the zones previously, set this to "False" in order to remeber the previously determined adcacency conditions.  If set to "True", the current adjacencies will be removed. The default is set to "False" in order to remeber your previously-set adjacencies.
+        preserveConstr_: Set to "True" to preserve the existing constructions assigned to the interior surfaces of adjacent zones.  It is not recommedned that is input be used unless you are building zones surface-by-surface and have done a diligent job of making sure that construction materials are assigned in reverse order on adjacent surfaces.
         _findAdjc: Set to "True" to solve adjacencies between zones.
     Returns:
         readMe!: A report of the found adjacencies.
@@ -39,7 +40,7 @@ Provided by Honeybee 0.0.64
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nJAN_20_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -107,13 +108,14 @@ def updateAdj(surface1, surface2, altConstruction, altBC, altWinConstr, tol):
     except: pass
     
     # change construction
-    if altConstruction == None:
-        surface1.setEPConstruction(surface1.intCnstrSet[surface1.type])
-        surface2.setEPConstruction(surface1.intCnstrSet[surface2.type])
-    else:
-        hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
-        hb_EPObjectsAux.assignEPConstruction(surface1, altConstruction, ghenv.Component)
-        hb_EPObjectsAux.assignEPConstruction(surface2, altConstruction, ghenv.Component)
+    if preserveConstr_ is not True:
+        if altConstruction == None:
+            surface1.setEPConstruction(surface1.intCnstrSet[surface1.type])
+            surface2.setEPConstruction(surface1.intCnstrSet[surface2.type])
+        else:
+            hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+            hb_EPObjectsAux.assignEPConstruction(surface1, altConstruction, ghenv.Component)
+            hb_EPObjectsAux.assignEPConstruction(surface2, altConstruction, ghenv.Component)
     
     # change bc
     if altBC != None:
