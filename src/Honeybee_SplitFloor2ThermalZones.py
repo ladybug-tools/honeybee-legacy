@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = 'Honeybee_SplitFloor2ThermalZones'
 ghenv.Component.NickName = 'Split2Zone'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nJAN_28_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -844,9 +844,20 @@ class Shape:
 
             # Get angle / Make this own function?
             dotprod = rc.Geometry.Vector3d.Multiply(dir_next,dir_prev)
-            cos_angle = dotprod/(dir_next.Length * dir_prev.Length)
-            dotrad = math.acos(cos_angle)
-
+            cos_theta = dotprod/(dir_next.Length * dir_prev.Length)
+            
+            # Deal with floating point precision errors from the dot product
+            # by setting tolerances for domain limit of -1, 1, and 0
+            
+            # at 90 deg
+            if self.is_near_zero(cos_theta):
+                dotrad = math.pi/2.0
+            # at 180 or 0 deg (collinear)
+            if self.is_near_zero(abs(cos_theta) - 1.0):
+                dotrad = 0.0 
+            else:
+                dotrad = math.acos(cos_theta)
+            
             inrad = self.get_inner_angle(dir_prev,dir_next,dotrad)
 
             if inrad > math.pi:
