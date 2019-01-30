@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nJAN_30_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -192,7 +192,7 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
         
         # This needs to be set to outdoors at first but will be replaced by the correct object on loading
         try:
-            if HBSurface.BC.lower() in ["outdoors", "ground", "adiabatic"]:
+            if HBSurface.BC.lower() != 'surface':
                 HBSurface.BCObject = "Outdoors" #This will be replaced by the correct object on loading
         except:
             pass
