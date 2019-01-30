@@ -84,7 +84,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nJAN_30_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -152,7 +152,7 @@ def setComponentInputs(shadeType):
         if input <= 1 or input == 4:
             pass
         elif input <= 15:
-            if shadeType == 1 and input <=12 and input >= 9:
+            if shadeType == 1 and input <=12 and input >= 10:
                 ghenv.Component.Params.Input[input].NickName = "___________"
                 ghenv.Component.Params.Input[input].Name = "."
                 ghenv.Component.Params.Input[input].Description = " "
@@ -160,6 +160,10 @@ def setComponentInputs(shadeType):
                 ghenv.Component.Params.Input[input].NickName = "airPermeability_"
                 ghenv.Component.Params.Input[input].Name = "airPermeability_"
                 ghenv.Component.Params.Input[input].Description = "An optional number between 0 and 1 to set the air permeability of the shade.  For example, use this to account for perforations in outdoor metal screens where air can circulate through.  The default is set to have 0 permeability."
+            elif shadeType == 1 and input == 9:
+                ghenv.Component.Params.Input[input].NickName = "openingMult_"
+                ghenv.Component.Params.Input[input].Name = "openingMult_"
+                ghenv.Component.Params.Input[input].Description = "An optional number between 0 and 1 to set the air permeability at the edges of the shade.  A value of 1 indicates that air can flow over the entire distance between the glass and shade.  A value of 0 indicated no air flow at edges. The default is set to have 1 permeability."
             elif shadeType == 2 and input == 2:
                 ghenv.Component.Params.Input[input].NickName = "shadeMaterial_"
                 ghenv.Component.Params.Input[input].Name = "shadeMaterial_"
@@ -422,6 +426,13 @@ def checkShadesInputs(zoneNames, windowNames, windowSrfs, isZone):
         if checkData2 == False:
             print "airPermeability_ must be between 0 and 1."
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "airPermeability_ must be between 0 and 1.")
+    
+    if openingMult_ != []:
+        for perm in openingMult_:
+            if perm < 0 or perm > 1: checkData2 = False
+        if checkData2 == False:
+            print "openingMult_ must be between 0 and 1."
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "openingMult_ must be between 0 and 1.")
     
     #Check if there is a shades material connected and, if not, set a default.
     checkData5 = True
@@ -931,6 +942,7 @@ def makeShade(_glzSrf):
     
     # If multiple airPermeability_ inputs are given, use it to split up the glazing by cardinal direction and assign different airPermeability_ to different directions.
     airPermea = getValueBasedOnOrientation(airPermeability_, normalVector)
+    opMult = getValueBasedOnOrientation(openingMult_, normalVector)
     
     #If multiple interiorOrExter_ inputs are given, use it to split up the glazing by cardinal direction and assign different interiorOrExterior_ to different directions.
     interiorOrExter = getValueBasedOnOrientation(interiorOrExter_, normalVector)
@@ -970,7 +982,7 @@ def makeShade(_glzSrf):
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
-    return shadingSurfaces, airPermea, EPDistToGlass, EPinteriorOrExter, assignEPCheckInit
+    return shadingSurfaces, airPermea, opMult, EPDistToGlass, EPinteriorOrExter, assignEPCheckInit
 
 
 #### HERE ARE THE FUNCTIONS THAT CREATE THE ENERGYPLUS OBJECTS.
@@ -1029,8 +1041,9 @@ def createEPBlindMat(shadeMaterial, EPSlatOrient, depth, shadingHeight, EPshdAng
     
     return EPBlindMat
 
-def createEPShadeMat(shadeMaterial, airPerm, distToGlass, name):
+def createEPShadeMat(shadeMaterial, airPerm, opMult, distToGlass, name):
     if airPerm == None: airPerm = 0
+    if opMult == None: opMult = 1.0
     #If air permeability is non-zero, determine infrared transmittance from it.
     infraredTrans = airPerm
     emissivity = (1-airPerm)*shadeMaterial[3]
@@ -1046,10 +1059,10 @@ def createEPShadeMat(shadeMaterial, airPerm, distToGlass, name):
         '\t' + str(shadeMaterial[4]) + ",                        !- Thickness {m}\n" + \
         '\t' + str(shadeMaterial[5]) + ",                        !- Conductivity {W/m-K}\n" + \
         '\t' + str(distToGlass) + ",                    !- Shade to Glass Distance {m}\n" + \
-        '\t' + "1.0,                     !- Top Opening Multiplier\n" + \
-        '\t' + "1.0,                     !- Bottom Opening Multiplier\n" + \
-        '\t' + "1.0,                     !- Left-Side Opening Multiplier\n" + \
-        '\t' + "1.0,                     !- Right-Side Opening Multiplier\n" + \
+        '\t' + str(opMult) + ",                     !- Top Opening Multiplier\n" + \
+        '\t' + str(opMult) + ",                     !- Bottom Opening Multiplier\n" + \
+        '\t' + str(opMult) +",                     !- Left-Side Opening Multiplier\n" + \
+        '\t' + str(opMult) + ",                     !- Right-Side Opening Multiplier\n" + \
         '\t' + str(airPerm) + ";                        !- Airflow Permeability {dimensionless}\n"
     
     return EPShadeMat
@@ -1271,9 +1284,10 @@ def main():
             #Generate the shades.
             if checkData == True:
                 for window in windowSrfsInit:
-                    shadeBreps, airPerm, distToGlass, EPinteriorOrExter, assignEPCheckInit = makeShade(window)
+                    shadeBreps, airPerm, opMult, distToGlass, EPinteriorOrExter, assignEPCheckInit = makeShade(window)
                     shadings.append(shadeBreps)
                     depthList.append(airPerm)
+                    shadingHeightList.append(opMult)
                     distToGlassList.append(distToGlass)
                     EPinteriorOrExterList.append(EPinteriorOrExter)
                     if assignEPCheckInit == False: assignEPCheck = False
@@ -1284,7 +1298,7 @@ def main():
                         blindMatName = shadeMaterial[0] + '-' + str(depthList[count]) + '-' + str(distToGlassList[count])
                         blindMatNames.append(blindMatName)
                         if blindMatName.upper() not in compShadeMats:
-                            blindMatStr = createEPShadeMat(shadeMaterial, depthList[count], distToGlassList[count], blindMatName)
+                            blindMatStr = createEPShadeMat(shadeMaterial, depthList[count], shadingHeightList[count], distToGlassList[count], blindMatName)
                             added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
                             compShadeMats.append(blindMatName.upper())
                             compShadeMatsStr.append(blindMatStr)
