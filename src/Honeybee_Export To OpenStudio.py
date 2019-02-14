@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.64\nJAN_08_2019'
+ghenv.Component.Message = 'VER 0.0.64\nFEB_14_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -4686,7 +4686,7 @@ class OPSmeasures(object):
         osExePath = osExePath.replace((workingDrive + '\\'), '')
         
         # Write the batch file to apply the measures.
-        batchStr = workingDrive + '\ncd\\' +  osExePath + '\n"' + 'openstudio.exe"' + ' run -w ' + self.oswAddress
+        batchStr = workingDrive + '\ncd\\' +  osExePath + '\n"' + 'openstudio.exe"' + ' run -m -w ' + self.oswAddress
         batchFileAddress = self.workingDir + '\\' + self.osmName.replace(" ", "_") +'.bat'
         batchfile = open(batchFileAddress, 'w')
         batchfile.write(batchStr)
