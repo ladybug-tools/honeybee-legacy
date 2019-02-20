@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.64\nFEB_14_2019'
+ghenv.Component.Message = 'VER 0.0.64\nFEB_20_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1480,7 +1480,7 @@ class WriteOPS(object):
             sizingSystem.setTypeofLoadtoSizeOn("Sensible") #VAV
             sizingSystem.setAllOutdoorAirinCooling(False) #VAV
             sizingSystem.setAllOutdoorAirinHeating(False) #VAV
-            if airDetails.recirculation == 'False':
+            if airDetails != None and airDetails.recirculation == 'False':
                 self.setAirLoopToOnceThroughAir(airloopPrimary, model)
         
         airLoopComps = []
@@ -2819,10 +2819,6 @@ class WriteOPS(object):
                         vavBox.autosizeMaximumAirFlowRate()
                         vavBox.resetMinimumAirFlowFractionSchedule()
                     
-                    # If there are any ventilation schedules specified, then set the VAV Box to follow them.
-                    if hbZones[zoneCount].ventilationSched != '':
-                        self.applyVentilationSched(model, hbZones[zoneCount], vavBox, zoneTotAir)
-                    
                     if hbZones[zoneCount].humidityMin != '':
                         humidTrigger = True
                     self.adjustElectricReheatCoil(model, vavBox, heatingDetails)
@@ -2995,10 +2991,6 @@ class WriteOPS(object):
                         vavBox.setZoneMinimumAirFlowMethod('Constant')
                         vavBox.autosizeMaximumAirFlowRate()
                         vavBox.resetMinimumAirFlowFractionSchedule()
-                    
-                    # If there are any ventilation schedules specified, then set the VAV Box to follow them.
-                    if hbZones[zoneCount].ventilationSched != '':
-                        self.applyVentilationSched(model, hbZones[zoneCount], vavBox, zoneTotAir)
                     
                     if hbZones[zoneCount].humidityMax != '':
                         dehumidTrigger = True
