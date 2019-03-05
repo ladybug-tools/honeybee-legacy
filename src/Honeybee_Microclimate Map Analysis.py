@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nMAR_05_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -347,7 +347,6 @@ def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, originalHour, di
     #Pull out the correct sun vector.
     sunVec = sunVecInfo[0][count]
     altitude = sunVecInfo[1][count]
-    azimuth = sunVecInfo[2][count]
     
     #Assign the sun vector to a sky patch that aligns with the testPtBlockedVec list.
     vectorskyPatches = []
@@ -371,15 +370,9 @@ def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, originalHour, di
     globHorizRad = globHorizRadList[originalHour-1]
     outdoorHorizInfrared = outHorizInfrared[originalHour-1]
     
-    #Define the Altitide and Azimuth as the SolarCal function understands it.
-    azFinal = azimuth
-    if azFinal > 180:
-        while azFinal > 180:
-            azFinal = azFinal-180
-    elif azFinal < 0:
-        while azFinal < 0:
-            azFinal = azFinal+180
-    azFinal = int(azFinal)
+    # Hard set the horizonal angle between the person and the sun to be at 135.
+    # This asumes that a person typically faces their side or back to the sun to avoid glare.
+    azFinal = 135
     
     altFinal = altitude
     if altFinal > 90: altFinal = altFinal-90
