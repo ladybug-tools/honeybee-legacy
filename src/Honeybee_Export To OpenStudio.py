@@ -3766,7 +3766,7 @@ class WriteOPS(object):
             self.generatorCosts.append('Honeybee system annual maintenance cost - '+str(HBsystemgenerator.maintenance_cost))
             
             # For this HBsystemgenerator write the output so that the produced electric energy is reported.
-            HBgeneratoroutputs.append("Output:Variable,"+str(HBsystemgenerator_name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
+            HBgeneratoroutputs.append("Output:Variable,*,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
             
             # Determine whether it is a PV, Wind or fuel generator system
             if HBsystemgenerator.PVgenerators != []:
