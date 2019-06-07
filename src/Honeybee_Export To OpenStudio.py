@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.64\nJUN_01_2019'
+ghenv.Component.Message = 'VER 0.0.64\nJUN_06_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -203,8 +203,10 @@ class WriteOPS(object):
         simControl.setDoPlantSizingCalculation(simulationControls[2])
         simControl.setRunSimulationforSizingPeriods(simulationControls[3])
         simControl.setRunSimulationforWeatherFileRunPeriods(simulationControls[4])
-        simControl.setMaximumNumberofWarmupDays(simulationControls[5])
-        simControl.setMinimumNumberofWarmupDays(simulationControls[6])
+        if simulationControls[5] != '':
+            simControl.setMaximumNumberofWarmupDays(simulationControls[5])
+        if simulationControls[6] != '':
+            simControl.setMinimumNumberofWarmupDays(simulationControls[6])
         
         simControl.setSolarDistribution(solarDist)
     
