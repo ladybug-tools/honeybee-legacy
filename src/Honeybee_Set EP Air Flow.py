@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.64
         fractionOfGlzAreaOperable_: A number or list of numbers between 0.0 and 1.0 that represents the fraction of the window area that is operable.  By default, it will be assumed that this is 0.5 assuming sliding windows that slide horizontally.
         fractionOfGlzHeightOperable_: A number or list of numbers between 0.0 and 1.0 that represents the fraction of the distance from the bottom of the zones windows to the top that are operable.  By default, it will be assumed that this is 1.0 assuming sliding windows that slide horizontally.
         windDrivenCrossVent_: Set to "True" if there is operable area of roughly equal area on different sides of the zone such that wind-driven cross ventilation will be induced.  Set to "False" if the operable area is primarily on one side of the zone and there is no wind-driven ventilation.  The default will examine the difference in directions that the zone's windows are facing and, if this maximum difference is greater than 90 degrees, cross ventilation will be turned on.  This input overrides this default.
-        stackDischargeCoeff_: A number between 0.0 and 1.0 that will be multipled by the area of the window to account for additional friction from window geometry, insect screens, etc.  This is the 'Stack Discharge Coefficient' variable in the equation of this component's description.  If left blank, this variable will be assumed to be 0.17 for single-sided ventilation with sliding windows and insect screens.  This value should be changed if windows are awning or casement. Some common values for this coefficient include the following:
+        stackDischargeCoeff_: A number between 0.0 and 1.0 that will be multipled by the area of the window to account for additional friction from window geometry, insect screens, etc.  This is the 'Stack Discharge Coefficient' variable in the equation of this component's description.  If left blank for window-based ventilation, this variable will be assumed to be 0.17 (for single-sided ventilation with sliding windows and insect screens).  If custom wind+stack option is chosen, the default will be "autocalculate". This value should be changed if windows are awning or casement. Some common values for this coefficient include the following:
             0.0 - Completely discounts stack ventilation from the natural ventilation calculation and only accounts for wind.
             0.17 - For buoyancy with ONE opening WITH an insect screen. In this case, the effective area should be the whole opening.
             0.25 - For buoyancy with ONE opening with NO insect screen. In this case, the effective area should be the whole opening.
@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.64\nJAN_10_2019'
+ghenv.Component.Message = 'VER 0.0.64\nJUL_01_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -587,7 +587,7 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                 HBZone.natVentWindDischarge.append(windDis)
                 
                 #Assign the wind discharge values.
-                if stackDisCoeff == None: stackDis = "0.17"
+                if stackDisCoeff == None: stackDis = "autocalculate"
                 else: stackDis = str(stackDisCoeff)
                 HBZone.natVentStackDischarge.append(stackDis)
                 
