@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.64\nJUN_06_2019'
+ghenv.Component.Message = 'VER 0.0.64\nJUL_08_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -828,7 +828,7 @@ class WriteOPS(object):
             if values[3][0] != '':
                 ### Openstudio currently does not support any shading control other than OnIfHighSolarOnWindow.
                 # As such, there is a workaround above for now.
-                if values[3][0] == 'OnIfHighSolarOnWindow':
+                if values[3][0] == 'OnIfHighSolarOnWindow' or (vernum1 >=2 and vernum2 >= 8):
                     OSShdCntrl.setShadingControlType(str(values[3][0]))
                 else:
                     self.replaceShdCntrl = True
@@ -5061,6 +5061,7 @@ class RunOPS(object):
                 # Add correct shading control objects to file.
                 shdCntrlName = shdCntrlItem[0]
                 values = self.hb_EPObjectsAux.getEPObjectDataByName(shdCntrlName)
+                
                 if not values[4][0].endswith('.CSV'):
                     shdCntrlStr = self.hb_EPObjectsAux.getEPObjectsStr(shdCntrlName)
                 else:
@@ -5068,6 +5069,7 @@ class RunOPS(object):
                     initStr = self.hb_EPObjectsAux.getEPObjectsStr(shdCntrlName)
                     shdCntrlStr = initStr.replace(values[4][0], newSchedName)
                     shdCntrlName = shdCntrlName.replace(values[4][0], newSchedName)
+                
                 
                 shdCntrlStrList = shdCntrlStr.split(shdCntrlName)
                 shdCntrlStr = shdCntrlStrList[0] + str(shdCntrlItem[1]) + shdCntrlStrList[1]
