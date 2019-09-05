@@ -84,7 +84,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.64\nJAN_30_2019'
+ghenv.Component.Message = 'VER 0.0.64\nSEP_05_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -893,8 +893,8 @@ def makeBlind(_glzSrf, depth, numShds, distBtwn):
     #Get the EnergyPlus distance to glass.
     assignEPCheckInit = True
     EPDistToGlass = (distToGlass + (depth)*(0.5)*math.sin(math.radians(EPshdAngle))) * sc.sticky["honeybee_ConversionFactor"]
-  
-    if EPDistToGlass < (depth)*(0.5): EPDistToGlass = (depth)*(0.5)
+    
+    if EPDistToGlass < (depth)*(0.5): EPDistToGlass = depth * sc.sticky["honeybee_ConversionFactor"] * 0.5
     if EPDistToGlass < 0.01: EPDistToGlass = 0.01
     elif EPDistToGlass > 1:
         assignEPCheckInit = False
