@@ -833,7 +833,7 @@ class WriteOPS(object):
                     OSShdCntrl.setShadingControlType(str(values[3][0]))
                 else:
                     self.replaceShdCntrl = True
-            self.shadeCntrlToReplace.append([final_shd_cntrl_name, OSShdCntrl.name()])
+            self.shadeCntrlToReplace.append([shdCntrlName, OSShdCntrl.name()])
             
             # Shading Schedule.
             if values[4][0] != '':
