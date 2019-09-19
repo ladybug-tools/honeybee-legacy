@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.64\nJUL_08_2019'
+ghenv.Component.Message = 'VER 0.0.64\nSEP_19_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -795,8 +795,9 @@ class WriteOPS(object):
         else:
             return self.getFrameObjFromLib(frameObjName)
     
-    def getOSShdCntrl(self, shdCntrlName, model):
-        if not self.isShdCntrlInLib(shdCntrlName):
+    def getOSShdCntrl(self, shdCntrlName, parent_zone, model):
+        final_shd_cntrl_name = '{}_{}'.format(shdCntrlName, parent_zone)
+        if not self.isShdCntrlInLib(final_shd_cntrl_name):
             # Make the shade control obect.
             values = self.hb_EPObjectsAux.getEPObjectDataByName(shdCntrlName)
             
@@ -832,7 +833,7 @@ class WriteOPS(object):
                     OSShdCntrl.setShadingControlType(str(values[3][0]))
                 else:
                     self.replaceShdCntrl = True
-            self.shadeCntrlToReplace.append([shdCntrlName, OSShdCntrl.name()])
+            self.shadeCntrlToReplace.append([final_shd_cntrl_name, OSShdCntrl.name()])
             
             # Shading Schedule.
             if values[4][0] != '':
@@ -850,10 +851,10 @@ class WriteOPS(object):
             except:
                 pass
             
-            self.addShdCntrlToLib(shdCntrlName, OSShdCntrl)
+            self.addShdCntrlToLib(final_shd_cntrl_name, OSShdCntrl)
             return OSShdCntrl
         else:
-            return self.getShdCntrlFromLib(shdCntrlName)
+            return self.getShdCntrlFromLib(final_shd_cntrl_name)
     
     def assignThermalZone(self, zone, space, model):
         thermalZone = ops.ThermalZone(model)
@@ -4447,7 +4448,7 @@ class WriteOPS(object):
             # Set any shading control objects.
             try:
                 shdCntrlName = childSrf.shadingControlName[0]
-                opsSdhCntrl = self.getOSShdCntrl(shdCntrlName, model)
+                opsSdhCntrl = self.getOSShdCntrl(shdCntrlName, surface.parent.name, model)
                 glazing.setShadingControl(opsSdhCntrl)
             except: pass
             
