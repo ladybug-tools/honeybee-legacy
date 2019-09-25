@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Glass Material"
 ghenv.Component.NickName = 'EPGlassMat'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nAUG_22_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
@@ -123,8 +123,8 @@ def main(name, thickness, solTrans, solRef, visTrans, visRef, fEmissivity, bEmis
     
     opticalDataType = "SpectralAverage"
     spectralDataSetName = ""
-    backSolarRef = 0
-    backVisRef = 0
+    backSolarRef = solRef
+    backVisRef = visRef
     infraredTrans = 0
     dirtCorrection = 1
     solarDiffusing = "No"

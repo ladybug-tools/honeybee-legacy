@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.64\nJAN_08_2019'
+ghenv.Component.Message = 'VER 0.0.64\nSEP_19_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -203,6 +203,10 @@ class WriteOPS(object):
         simControl.setDoPlantSizingCalculation(simulationControls[2])
         simControl.setRunSimulationforSizingPeriods(simulationControls[3])
         simControl.setRunSimulationforWeatherFileRunPeriods(simulationControls[4])
+        if simulationControls[5] != '':
+            simControl.setMaximumNumberofWarmupDays(simulationControls[5])
+        if simulationControls[6] != '':
+            simControl.setMinimumNumberofWarmupDays(simulationControls[6])
         
         simControl.setSolarDistribution(solarDist)
     
@@ -210,7 +214,6 @@ class WriteOPS(object):
         calcMethod, freq, maxFigure = self.simParameters[1]
         shadowCalculation = ops.Model.getShadowCalculation(model)
         shadowCalculation.setMaximumFiguresInShadowOverlapCalculations(int(maxFigure))
-        shadowCalculation.setSkyDiffuseModelingAlgorithm(calcMethod)
         shadowCalculation.setCalculationFrequency(int(freq))
     
     def setTimestep(self, model):
@@ -792,8 +795,9 @@ class WriteOPS(object):
         else:
             return self.getFrameObjFromLib(frameObjName)
     
-    def getOSShdCntrl(self, shdCntrlName, model):
-        if not self.isShdCntrlInLib(shdCntrlName):
+    def getOSShdCntrl(self, shdCntrlName, parent_zone, model):
+        final_shd_cntrl_name = '{}_{}'.format(shdCntrlName, parent_zone)
+        if not self.isShdCntrlInLib(final_shd_cntrl_name):
             # Make the shade control obect.
             values = self.hb_EPObjectsAux.getEPObjectDataByName(shdCntrlName)
             
@@ -825,7 +829,7 @@ class WriteOPS(object):
             if values[3][0] != '':
                 ### Openstudio currently does not support any shading control other than OnIfHighSolarOnWindow.
                 # As such, there is a workaround above for now.
-                if values[3][0] == 'OnIfHighSolarOnWindow':
+                if values[3][0] == 'OnIfHighSolarOnWindow' or (vernum1 >=2 and vernum2 >= 8):
                     OSShdCntrl.setShadingControlType(str(values[3][0]))
                 else:
                     self.replaceShdCntrl = True
@@ -847,10 +851,10 @@ class WriteOPS(object):
             except:
                 pass
             
-            self.addShdCntrlToLib(shdCntrlName, OSShdCntrl)
+            self.addShdCntrlToLib(final_shd_cntrl_name, OSShdCntrl)
             return OSShdCntrl
         else:
-            return self.getShdCntrlFromLib(shdCntrlName)
+            return self.getShdCntrlFromLib(final_shd_cntrl_name)
     
     def assignThermalZone(self, zone, space, model):
         thermalZone = ops.ThermalZone(model)
@@ -1480,7 +1484,7 @@ class WriteOPS(object):
             sizingSystem.setTypeofLoadtoSizeOn("Sensible") #VAV
             sizingSystem.setAllOutdoorAirinCooling(False) #VAV
             sizingSystem.setAllOutdoorAirinHeating(False) #VAV
-            if airDetails.recirculation == 'False':
+            if airDetails != None and airDetails.recirculation == 'False':
                 self.setAirLoopToOnceThroughAir(airloopPrimary, model)
         
         airLoopComps = []
@@ -2819,10 +2823,6 @@ class WriteOPS(object):
                         vavBox.autosizeMaximumAirFlowRate()
                         vavBox.resetMinimumAirFlowFractionSchedule()
                     
-                    # If there are any ventilation schedules specified, then set the VAV Box to follow them.
-                    if hbZones[zoneCount].ventilationSched != '':
-                        self.applyVentilationSched(model, hbZones[zoneCount], vavBox, zoneTotAir)
-                    
                     if hbZones[zoneCount].humidityMin != '':
                         humidTrigger = True
                     self.adjustElectricReheatCoil(model, vavBox, heatingDetails)
@@ -2995,10 +2995,6 @@ class WriteOPS(object):
                         vavBox.setZoneMinimumAirFlowMethod('Constant')
                         vavBox.autosizeMaximumAirFlowRate()
                         vavBox.resetMinimumAirFlowFractionSchedule()
-                    
-                    # If there are any ventilation schedules specified, then set the VAV Box to follow them.
-                    if hbZones[zoneCount].ventilationSched != '':
-                        self.applyVentilationSched(model, hbZones[zoneCount], vavBox, zoneTotAir)
                     
                     if hbZones[zoneCount].humidityMax != '':
                         dehumidTrigger = True
@@ -3774,7 +3770,7 @@ class WriteOPS(object):
             self.generatorCosts.append('Honeybee system annual maintenance cost - '+str(HBsystemgenerator.maintenance_cost))
             
             # For this HBsystemgenerator write the output so that the produced electric energy is reported.
-            HBgeneratoroutputs.append("Output:Variable,"+str(HBsystemgenerator_name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
+            HBgeneratoroutputs.append("Output:Variable,*,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
             
             # Determine whether it is a PV, Wind or fuel generator system
             if HBsystemgenerator.PVgenerators != []:
@@ -4452,7 +4448,7 @@ class WriteOPS(object):
             # Set any shading control objects.
             try:
                 shdCntrlName = childSrf.shadingControlName[0]
-                opsSdhCntrl = self.getOSShdCntrl(shdCntrlName, model)
+                opsSdhCntrl = self.getOSShdCntrl(shdCntrlName, surface.parent.name, model)
                 glazing.setShadingControl(opsSdhCntrl)
             except: pass
             
@@ -4686,7 +4682,7 @@ class OPSmeasures(object):
         osExePath = osExePath.replace((workingDrive + '\\'), '')
         
         # Write the batch file to apply the measures.
-        batchStr = workingDrive + '\ncd\\' +  osExePath + '\n"' + 'openstudio.exe"' + ' run -w ' + self.oswAddress
+        batchStr = workingDrive + '\ncd\\' +  osExePath + '\n"' + 'openstudio.exe"' + ' run -m -w ' + self.oswAddress
         batchFileAddress = self.workingDir + '\\' + self.osmName.replace(" ", "_") +'.bat'
         batchfile = open(batchFileAddress, 'w')
         batchfile.write(batchStr)
@@ -5066,6 +5062,7 @@ class RunOPS(object):
                 # Add correct shading control objects to file.
                 shdCntrlName = shdCntrlItem[0]
                 values = self.hb_EPObjectsAux.getEPObjectDataByName(shdCntrlName)
+                
                 if not values[4][0].endswith('.CSV'):
                     shdCntrlStr = self.hb_EPObjectsAux.getEPObjectsStr(shdCntrlName)
                 else:
@@ -5073,6 +5070,7 @@ class RunOPS(object):
                     initStr = self.hb_EPObjectsAux.getEPObjectsStr(shdCntrlName)
                     shdCntrlStr = initStr.replace(values[4][0], newSchedName)
                     shdCntrlName = shdCntrlName.replace(values[4][0], newSchedName)
+                
                 
                 shdCntrlStrList = shdCntrlStr.split(shdCntrlName)
                 shdCntrlStr = shdCntrlStrList[0] + str(shdCntrlItem[1]) + shdCntrlStrList[1]

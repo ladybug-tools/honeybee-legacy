@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.64
 """
 ghenv.Component.Name = "Honeybee_Load OpenStudio Measure"
 ghenv.Component.NickName = 'importOSMeasure'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nJUL_04_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
@@ -170,7 +170,7 @@ class OPSMeasureArg:
             
     def __repr__(self):
         return (self.display_name + "<" + self.type + "> " + str(self.choices) + \
-               " Current Value: %s")%(self.default_value if not self.userInput else self.userInput)
+               " Current Value: {}").format(self.default_value if not self.userInput else self.userInput)
 
 def give_warning(msg):
     w = gh.GH_RuntimeMessageLevel.Warning
