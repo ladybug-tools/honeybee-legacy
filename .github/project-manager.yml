@@ -73,7 +73,7 @@ projects:
     issue_type: issue
     label: hacktoberfest
     columns: 
-      - name: ladybug
+      - name: honeybee
         labels:
           - hacktoberfest
       - name: done
