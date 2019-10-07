@@ -34,4 +34,5 @@ Useful links
 [Contributors](https://github.com/mostaphaRoudsari/honeybee/graphs/contributors)
 ========================================
 
-So many thanks to Radiance, Daysim, EnergyPlus and OpenStudio!
+So many thanks and love to Radiance, Daysim, EnergyPlus and OpenStudio!
+
