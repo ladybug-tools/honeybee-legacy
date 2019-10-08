@@ -42,6 +42,7 @@ Provided by Honeybee 0.0.64
             8 - City terrian.
         ::::::::::::::::::::::::::::::::::::::: ...
         _HBZones: The HBZones that you wish to write into an OSM file and/or run through EnergyPlus.  These can be from any of the components that output HBZones.
+        HVACSystem_: A customized HVAC system modeled with Ironbug.
         HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component.
         simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs. 
         _OSMeasures: Any number of OpenStudio measures that you want to apply to your OpenStudio model. Use the "Honeybee_Load OpenStudio Measure" component to load a measure into Grasshopper.  OpenStudio measures can be downloaded from the NREL Building Components Library (BCL) at this link: https://bcl.nrel.gov/
@@ -71,7 +72,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.64\nSEP_19_2019'
+ghenv.Component.Message = 'VER 0.0.64\nOCT_08_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -5000,6 +5001,9 @@ class RunOPS(object):
                 if origName == line:
                     origName = line.split(';')[0]
                 newName = origName.split('\\')[-1].split('.')[0]
+                #Ignore csv file path in Schedule:File generaged from OpenStudio 2.8
+                if '/files/' in origName:
+                    newName = origName
                 if origName not in foundCSVSchedules:
                     foundCSVSchedules.append(origName)
                 if wrongLineTrigger ==True: lines.append(line)
