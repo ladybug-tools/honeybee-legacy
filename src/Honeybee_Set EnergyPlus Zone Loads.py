@@ -29,9 +29,14 @@ Provided by Honeybee 0.0.64
         _HBZones: Honeybee zones for which you want to change the loads.
         equipmentLoadPerArea_: The desired equipment load per square meter of floor.  Values here should be in W/m2 (Watts per square meter).  Typical values can range from 2 W/m2 (for just a laptop or two in the zone) to 15 W/m2 for an office filled with computers and appliances.
         infiltrationRatePerArea_: The desired rate of outside air infiltration into the zone per square meter of floor.  Values here should be in m3/s-m2 (Cubic meters per second per square meter of floor).  ASHRAE recommends the following general infiltration rates based on the area of the facade exposed to the outdoors (note that you have to use the "Honeybee_infOrVentPerArea" to convert):
-            0.0001 (m3/s per m2 facade) - Tight building
-            0.0003 (m3/s per m2 facade) - Average building
-            0.0006 (m3/s per m2 facade) - Leaky building
+            ------------------------------------------------------------
+            Unit of following number: m3/s per m2 facade @75Pa
+            ------------------------------------------------------------
+            0.000047 - Passive house (0.1 cfm/sf facade @75Pa)
+            0.0001 - Tight building
+            0.000189 - ASHRAE 90.1-2013 (0.4 cfm/sf facade @75Pa)
+            0.0003 - Average building
+            0.0006 - Leaky building
         lightingDensityPerArea_: The desired lighting load per square meter of floor.  Values here should be in W/m2 (Watts per square meter).  Typical values can range from 3 W/m2 for efficeint LED bulbs to 15 W/m2 for incandescent heat lamps.
         numOfPeoplePerArea_: The desired number of per square meter of floor at peak occupancy.  Values here should be in ppl/m2 (People per square meter).  Typical values can range from 0.02 ppl/m2 for a lightly-occupied household to 0.5 ppl/m2 for a tightly packed auditorium.
         ventilationPerArea_: The desired minimum rate of outdoor air ventilation through the mechanical system into the zone in m3/s per m2 of floor.  Values here should be in m3/s-m2 (Cubic meters per second per square meter of floor).  Often, this total value over the zone should be much lower than the ventilation per person (below).  Typical values can range from 0.0002 m3/s-m2 for lightly-occupied houses to 0.0025 m3/s-m2 for spaces like laboratories and cleanrooms where dust contamination is a major concern.
@@ -44,7 +49,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Loads"
 ghenv.Component.NickName = 'setEPZoneLoads'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nOCT_08_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
