@@ -140,16 +140,17 @@ def main(weatherFile, analysisPeriod):
     batchFile.write(batchStr)
     batchFile.close()
     os.system(batchFileName)
-    
-    # call file address
-    calFile = subWorkingDir + "\\" + newLocName + '_1.cal'
-    
+
     #write the sky file
     # read the analysis period to name the file
     stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod, False)
+
+    # call file address - with analysis period
+    calFile = subWorkingDir + "\\" + newLocName + '_1_%s.cal' \
+              % "_".join([str(stMonth), str(stDay), str(stHour), str(endMonth), str(endDay), str(endHour)])
     
-    
-    outputFile = subWorkingDir + "\\cumulativeSky_" + "_".join([str(stMonth), str(stDay), str(stHour), str(endMonth), str(endDay), str(endHour)])  + ".sky"
+    outputFile = subWorkingDir + "\\cumulativeSky_" + \
+                 "_".join([str(stMonth), str(stDay), str(stHour), str(endMonth), str(endDay), str(endHour)])  + ".sky"
     
     skystr = cumSkystr(calFile)
     

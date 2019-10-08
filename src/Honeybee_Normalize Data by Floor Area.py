@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Normalize Data by Floor Area"
 ghenv.Component.NickName = 'flrNorm'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nSEP_25_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -114,7 +114,7 @@ def main(HBZones, simData):
         for count, branch in enumerate(strPyList):
             zName = branch[2].split('for ')[-1]
             if zName in hbZoneNames.keys():
-                zoneDat = dataPyList[hbZoneNames[zName]]
+                zoneDat = dataPyList[count]
                 flrNormDat = createNormHeader(branch)
                 flrNormDatValue = []
                 for val in zoneDat:

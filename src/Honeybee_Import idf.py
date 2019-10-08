@@ -12,7 +12,7 @@ Constructions, schedules and systems will be neglected
 """
 ghenv.Component.Name = "Honeybee_Import idf"
 ghenv.Component.NickName = 'importIdf'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nFEB_06_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -328,16 +328,25 @@ def main(idfFile, importEPObjects = False):
         # add child surfaces
         for surfaceName in idfFileDict["FenestrationSurface:Detailed"]: #["BuildingSurface:Detailed"]:
             try:
+                numOfKeys = len(idfFileDict["FenestrationSurface:Detailed"][surfaceName].keys())
                 srfType = idfFileDict["FenestrationSurface:Detailed"][surfaceName][1][0]
                 EPConstruction = idfFileDict["FenestrationSurface:Detailed"][surfaceName][2][0]
                 parentSrf = idfFileDict["FenestrationSurface:Detailed"][surfaceName][3][0]
                 BCObject = idfFileDict["FenestrationSurface:Detailed"][surfaceName][4][0]
                 viewFactor = idfFileDict["FenestrationSurface:Detailed"][surfaceName][5][0]
-                shadingControlName = idfFileDict["FenestrationSurface:Detailed"][surfaceName][6][0]
-                frameName = idfFileDict["FenestrationSurface:Detailed"][surfaceName][7][0]
-                multiplier = idfFileDict["FenestrationSurface:Detailed"][surfaceName][8][0]
-                numOfVertices = idfFileDict["FenestrationSurface:Detailed"][surfaceName][9][0]
-                numOfKeys = len(idfFileDict["FenestrationSurface:Detailed"][surfaceName].keys())
+                
+                if (numOfKeys - 10) % 3 == 0:
+                    shadingControlName = idfFileDict["FenestrationSurface:Detailed"][surfaceName][6][0]
+                    frameName = idfFileDict["FenestrationSurface:Detailed"][surfaceName][7][0]
+                    multiplier = idfFileDict["FenestrationSurface:Detailed"][surfaceName][8][0]
+                    numOfVertices = idfFileDict["FenestrationSurface:Detailed"][surfaceName][9][0]
+                    startVertIndex = 10
+                else:
+                    shadingControlName = ""
+                    frameName = idfFileDict["FenestrationSurface:Detailed"][surfaceName][6][0]
+                    multiplier = idfFileDict["FenestrationSurface:Detailed"][surfaceName][7][0]
+                    numOfVertices = idfFileDict["FenestrationSurface:Detailed"][surfaceName][8][0]
+                    startVertIndex = 9
                 
                 pts = []
                 
@@ -355,12 +364,12 @@ def main(idfFile, importEPObjects = False):
                 # find moving vector based on parent zone
                 movingVector = HBZones[HBSurfaces[parentSrf].parent.name.lower()][1]
                 
-                for coordinate in range(10, numOfKeys, 3):
+                for coordinate in range(startVertIndex, numOfKeys, 3):
                     x = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate][0]
                     y = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate + 1][0]
                     z = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate + 2][0]
                     pts.append(rc.Geometry.Point3d.Add(rc.Geometry.Point3d(float(x), float(y), float(z)), movingVector))
-                    
+                
                 pts.append(pts[0])
                 polyline = rc.Geometry.Polyline(pts).ToNurbsCurve()
                 geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]

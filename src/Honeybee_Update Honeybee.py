@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nSEP_26_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | Developers"
@@ -82,7 +82,7 @@ def downloadSourceAndUnzip(lb_preparation):
     """
     Download the source code from github and unzip it in temp folder
     """
-    url = "https://github.com/mostaphaRoudsari/honeybee/archive/master.zip"
+    url = "https://github.com/ladybug-tools/honeybee-legacy/archive/master.zip"
     targetDirectory = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "honeybeeSrc")
     
     
@@ -123,7 +123,7 @@ def downloadSourceAndUnzip(lb_preparation):
             else:
                 zf.extract(f, targetDirectory)
     
-    userObjectsFolder = os.path.join(targetDirectory, r"honeybee-master\userObjects")
+    userObjectsFolder = os.path.join(targetDirectory, r"honeybee-legacy-master\userObjects")
     
     return userObjectsFolder
 

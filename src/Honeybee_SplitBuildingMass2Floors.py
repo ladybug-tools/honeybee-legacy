@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass2Floors'
 ghenv.Component.NickName = 'Split2Floors'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nJAN_28_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -287,7 +287,6 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
 def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visualization):
     #Input: mass, floorHeights, lb_preparation, lb_visualization
     #Output: splitFloors, floorCrvs, topInc, nurbsList, lastFloorInclud
-    debug = sc.sticky['debug']
 
     if len(bldgMasses)!=0:
         # clean the geometries
@@ -349,7 +348,6 @@ def is_near_zero(num, eps=1E-10):
     return abs(float(num)) < eps
 def main(mass, floorHeights):
     #Import the Ladybug Classes.
-    #debug = sc.sticky['debug']
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
         lb_preparation = sc.sticky["ladybug_Preparation"]()
         lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
@@ -361,7 +359,6 @@ def main(mass, floorHeights):
         lastFloorInclud = []
         if floorHeights != []:
             splitFloors, topInc,lastFloorInclud = splitFloorHeights(mass, floorHeights, lb_preparation, lb_visualization)
-        #debug.extend(map(lambda n: n[0],splitFloors))
         #Sort the floors into a list
         splitZones = []
         for count, mass in enumerate(splitFloors):
@@ -371,7 +368,6 @@ def main(mass, floorHeights):
             elif topInc[count][0] == False and lastFloorInclud[count] == False:
                 splitZones.append(mass)
             else:
-                debug.append(mass[0])
                 splitZones.append(mass[:-1])
 
         #return list of list of each floor zones
@@ -384,7 +380,6 @@ def main(mass, floorHeights):
 
 checkData = False
 
-sc.sticky['debug']=[]
 if _runIt == True:
     checkData = checkTheInputs()
 if checkData == True:
@@ -426,4 +421,3 @@ if checkData == True:
                 except:
                     splitBldgFloors.Add(mass, p)
                     #names.Add(str(i) + "_" + str(j), p)
-debug = sc.sticky['debug']
