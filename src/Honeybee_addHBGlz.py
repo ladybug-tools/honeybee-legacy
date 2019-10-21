@@ -48,7 +48,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.64\nOCT_13_2019'
+ghenv.Component.Message = 'VER 0.0.64\nOCT_21_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -148,7 +148,7 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
     
                 # add it to the base surface 
                 # Change BC 'Ground' and 'Adiabatic', to 'Outdoors'
-                if(HBSurface.BC.ToUpper()!= "SURFACE"):
+                if(HBSurface.BC.ToUpper()!= "SURFACE" and HBSurface.BC.ToUpper()!= "OUTDOORS"):
                     HBSurface.BC= "Outdoors"
                     HBSurface.sunExposure = "SunExposed"
                     HBSurface.windExposure = "WindExposed"
