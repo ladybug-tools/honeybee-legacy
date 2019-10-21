@@ -28,7 +28,7 @@ Provided by Honeybee 0.0.64
     Args:
         _HBZones: Honeybee zones for which you want to change the loads.
         equipmentLoadPerArea_: The desired equipment load per square meter of floor.  Values here should be in W/m2 (Watts per square meter).  Typical values can range from 2 W/m2 (for just a laptop or two in the zone) to 15 W/m2 for an office filled with computers and appliances.
-        infiltrationRatePerArea_: The desired rate of outside air infiltration into the zone per square meter of floor.  Values here should be in m3/s-m2 (Cubic meters per second per square meter of floor).  ASHRAE recommends the following general infiltration rates based on the area of the facade exposed to the outdoors 
+        _infiltrationRatePerArea_: The desired rate of outside air infiltration into the zone per square meter of floor.  Values here should be in m3/s-m2 (Cubic meters per second per square meter of floor).  ASHRAE recommends the following general infiltration rates based on the area of the facade exposed to the outdoors 
             (note that you have to use the "Honeybee_infOrVentPerArea" to convert):
             ------------------------------------------------------------
             Unit of following reference numbers: 
@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Loads"
 ghenv.Component.NickName = 'setEPZoneLoads'
-ghenv.Component.Message = 'VER 0.0.64\nOCT_13_2019'
+ghenv.Component.Message = 'VER 0.0.64\nOCT_21_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -114,7 +114,10 @@ def main(HBZones, equipmentLoadPerArea, infiltrationRatePerArea, lightingDensity
         
         if equipmentLoadPerArea[zoneCount] != None:
             HBZone.equipmentLoadPerArea = equipmentLoadPerArea[zoneCount]
-        if infiltrationRatePerArea[zoneCount] != None:
+        if infiltrationRatePerArea[zoneCount] == None:
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, "No infiltration rate per floor area has been set, please use Honeybee_infOrVentPerArea to convert infiltration rate per Facade area as an input!")
+        else:
             HBZone.infiltrationRatePerArea = infiltrationRatePerArea[zoneCount]
         if lightingDensityPerArea[zoneCount] != None:
             HBZone.lightingDensityPerArea = lightingDensityPerArea[zoneCount]
@@ -135,6 +138,6 @@ def main(HBZones, equipmentLoadPerArea, infiltrationRatePerArea, lightingDensity
     
 
 if _HBZones and _HBZones[0]!=None:
-    results = main(_HBZones, equipmentLoadPerArea_, infiltrationRatePerArea_, lightingDensityPerArea_, numOfPeoplePerArea_, ventilationPerArea_, ventilationPerPerson_, recirculatedAirPerArea_)
+    results = main(_HBZones, equipmentLoadPerArea_, _infiltrationRatePerArea_, lightingDensityPerArea_, numOfPeoplePerArea_, ventilationPerArea_, ventilationPerPerson_, recirculatedAirPerArea_)
     
     if results != -1: HBZones, loads = results
