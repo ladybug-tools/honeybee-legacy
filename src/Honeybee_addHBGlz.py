@@ -149,11 +149,11 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
                 # add it to the base surface 
                 # Change BC 'Ground' and 'Adiabatic', to 'Outdoors'
                 if(HBSurface.BC.ToUpper()!= "SURFACE" and HBSurface.BC.ToUpper()!= "OUTDOORS"):
+                    warningMsg =  "Windows cannot be attached on adiabatic surfaces, %s's boundary condition has been changed from %s to Outdoors." % (HBSurface.name, HBSurface.BC)
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                     HBSurface.BC= "Outdoors"
                     HBSurface.sunExposure = "SunExposed"
                     HBSurface.windExposure = "WindExposed"
-                    warningMsg = HBSurface.name + "'s boundary condition has been changed from adiabatic to outdoors."
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                 HBSurface.addChildSrf(HBFenSrf)
                 HBSurface.calculatePunchedSurface()
 
