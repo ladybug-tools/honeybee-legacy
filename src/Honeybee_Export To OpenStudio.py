@@ -72,7 +72,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.64\nOCT_08_2019'
+ghenv.Component.Message = 'VER 0.0.64\nOCT_24_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3395,7 +3395,7 @@ class WriteOPS(object):
         spaceName = str(spaceType.name())
         if spaceName not in self.infiltList:
             infiltration = ops.SpaceInfiltrationDesignFlowRate(model)
-            infiltration.setFlowperSpaceFloorArea(zone.infiltrationRatePerArea)
+            infiltration.setFlowperExteriorSurfaceArea(zone.infiltrationRatePerArea)
             infiltration.setSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
             infiltration.setSpaceType(spaceType)
             self.infiltList.append(spaceName)
