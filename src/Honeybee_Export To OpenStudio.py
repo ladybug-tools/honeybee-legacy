@@ -5618,13 +5618,17 @@ def main(HBZones, HVACSystem, HBContext, north, epwWeatherFile, analysisPeriod, 
     
     # Open the model in OpenStudio (if requested).
     def openModel(fname):
-        try:
-            os.startfile(fname)
-        except:
+        #TODO: need to find a way to check other nonOpsStrings as well, such as Natural Ventilation, CSV file, etc.
+        if additionalStrings_ !=[]:
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, "additionalStrings are raw energyPlus idf strings, which cannot be exported to OpenStudio. \nYou have to run the simulation directly here, by setting runSimulation_ to True")
+        else:
             try:
-                os.system("start " + fname)
+                os.startfile(fname)
             except:
-                os.system("OpenStudioApp.exe " + fname)
+                try:
+                    os.system("start " + fname)
+                except:
+                    os.system("OpenStudioApp.exe " + fname)
     if openOpenStudio and not (measureApplied == True and runIt > 0):
         openModel(fname)
     
