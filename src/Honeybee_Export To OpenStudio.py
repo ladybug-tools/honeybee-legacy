@@ -72,7 +72,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.64\nOCT_08_2019'
+ghenv.Component.Message = 'VER 0.0.64\nOCT_24_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3395,7 +3395,7 @@ class WriteOPS(object):
         spaceName = str(spaceType.name())
         if spaceName not in self.infiltList:
             infiltration = ops.SpaceInfiltrationDesignFlowRate(model)
-            infiltration.setFlowperSpaceFloorArea(zone.infiltrationRatePerArea)
+            infiltration.setFlowperExteriorSurfaceArea(zone.infiltrationRatePerArea)
             infiltration.setSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
             infiltration.setSpaceType(spaceType)
             self.infiltList.append(spaceName)
@@ -5618,13 +5618,17 @@ def main(HBZones, HVACSystem, HBContext, north, epwWeatherFile, analysisPeriod, 
     
     # Open the model in OpenStudio (if requested).
     def openModel(fname):
-        try:
-            os.startfile(fname)
-        except:
+        #TODO: need to find a way to check other nonOpsStrings as well, such as Natural Ventilation, CSV file, etc.
+        if additionalStrings_ !=[]:
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, "additionalStrings are raw energyPlus idf strings, which cannot be exported to OpenStudio. \nYou have to run the simulation directly here, by setting runSimulation_ to True")
+        else:
             try:
-                os.system("start " + fname)
+                os.startfile(fname)
             except:
-                os.system("OpenStudioApp.exe " + fname)
+                try:
+                    os.system("start " + fname)
+                except:
+                    os.system("OpenStudioApp.exe " + fname)
     if openOpenStudio and not (measureApplied == True and runIt > 0):
         openModel(fname)
     

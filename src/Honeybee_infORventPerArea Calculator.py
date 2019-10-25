@@ -35,13 +35,13 @@ Provided by Honeybee 0.0.64
         _blowerPressure_: A number representing the pressure differential in Pascals (Pa) between indoors/outdoors at which the specified flow rate above occurs.  When set to 0 or left untouched, the specified input flow rate to this component will be the same as that output from the component (only the units will be converted and no translation from one pressure to another will occur).  However, many blower door tests for infiltration occur at higher pressure differentials of 50 Pa or 75 Pa.  You can input this pressure differential here in order to convert the flow rate of this blower door test to typical building pressure flow rates of 4 Pa.
     Returns:
         readMe!: Report of the calculations
-        infORventPerArea: infiltrationRatePerArea or ventilationPerArea in m3/s-m2 (Cubic meters per second per square meter of floor area) that can be plugged into the "Set EnergyPlus Zone Loads" component.
+        infORventPerArea: infiltrationRatePerArea_Facade in m3/s-m2 (Cubic meters per second per square meter of exterior facade area) or ventilationPerArea in m3/s-m2 (Cubic meters per second per square meter of floor area) that can be plugged into the "Set EnergyPlus Zone Loads" component.
         allFloors: The floors of the zones that are used to determine the infORventPerArea.
         allExposed: If _ACHorM3sM2_ is set to "False", the area of the zone that is interpreted as exposed srface area will be output here.
 """
 ghenv.Component.Name = "Honeybee_infORventPerArea Calculator"
 ghenv.Component.NickName = 'ACH2m3/s-m2 Calculator'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nOCT_24_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -101,7 +101,7 @@ def main(hb_hive, HBZones, airFlowRate, unit):
         warning= None
         infORventPerAreaRes = ''
         try:
-            infORventPerArea.append(standardFlowRate / flrArea)
+            infORventPerArea.append(standardFlowRate)
         except:
             warning = "One of the HBZones did not have any floor area.  The oringal air change values will be kept."
             print warning

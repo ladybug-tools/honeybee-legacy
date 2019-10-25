@@ -28,8 +28,7 @@ Provided by Honeybee 0.0.64
     Args:
         _HBZones: Honeybee zones for which you want to change the loads.
         equipmentLoadPerArea_: The desired equipment load per square meter of floor.  Values here should be in W/m2 (Watts per square meter).  Typical values can range from 2 W/m2 (for just a laptop or two in the zone) to 15 W/m2 for an office filled with computers and appliances.
-        infiltrationRatePerArea_: The desired rate of outside air infiltration into the zone per square meter of floor.  Values here should be in m3/s-m2 (Cubic meters per second per square meter of floor).  ASHRAE recommends the following general infiltration rates based on the area of the facade exposed to the outdoors 
-            (note that you have to use the "Honeybee_infOrVentPerArea" to convert):
+        infilRatePerArea_Facade_: The desired rate of outside air infiltration into the zone per square meter of exterior facade.  Values here should be in m3/s-m2 @4Pa(Cubic meters per second per square meter of exterior facade).  ASHRAE recommends the following general infiltration rates based on the area of the facade exposed to the outdoors:
             ------------------------------------------------------------
             Unit of following reference numbers: 
             m3/s per m2 facade @4Pa
@@ -51,7 +50,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Loads"
 ghenv.Component.NickName = 'setEPZoneLoads'
-ghenv.Component.Message = 'VER 0.0.64\nOCT_13_2019'
+ghenv.Component.Message = 'VER 0.0.64\nOCT_24_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -135,6 +134,6 @@ def main(HBZones, equipmentLoadPerArea, infiltrationRatePerArea, lightingDensity
     
 
 if _HBZones and _HBZones[0]!=None:
-    results = main(_HBZones, equipmentLoadPerArea_, infiltrationRatePerArea_, lightingDensityPerArea_, numOfPeoplePerArea_, ventilationPerArea_, ventilationPerPerson_, recirculatedAirPerArea_)
+    results = main(_HBZones, equipmentLoadPerArea_, infilRatePerArea_Facade_, lightingDensityPerArea_, numOfPeoplePerArea_, ventilationPerArea_, ventilationPerPerson_, recirculatedAirPerArea_)
     
     if results != -1: HBZones, loads = results
