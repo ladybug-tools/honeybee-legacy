@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.64
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nOCT_25_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -848,7 +848,7 @@ class WriteIDF(object):
             # find filebased schedule name
             scheduleName = self.fileBasedSchedules[scheduleName.upper()]
         
-        method = 1 
+        method = 2
         value = zone.infiltrationRatePerArea
         
         methods = {0: 'Flow/Zone',
