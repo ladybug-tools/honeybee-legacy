@@ -46,7 +46,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run OSM"
 ghenv.Component.NickName = 'Re-Run OSM'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nDEC_04_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -141,7 +141,12 @@ def osmToidf(workingDir, projectName, osmPath):
     except: pass
     
     idfFolder = os.path.join(projectFolder)
-    idfFilePath = ops.Path(os.path.join(projectFolder, "ModelToIdf", "in.idf"))
+    idfFilePath = os.path.join(projectFolder, "ModelToIdf", "in.idf")
+    try:
+       idfFilePath = ops.Path(idfFilePath)
+    except TypeError:
+        # OpenStudio 2.6.1
+        idfFilePath = ops.Path(ops.OpenStudioUtilitiesCore.toPath(idfFilePath))
     
     # load the test model
     model = ops.Model().load(ops.Path(osmPath)).get()
@@ -164,8 +169,12 @@ def main(epwFile, osmFile, runEnergyPlus, openStudioLibFolder):
     # Preparation
     workingDir, fileName = os.path.split(osmFile)
     projectName = (".").join(fileName.split(".")[:-1])
-    osmPath = ops.Path(osmFile)
-    
+    try:
+        osmPath = ops.Path(osmFile)
+    except TypeError:
+        # OpenStudio 2.6.1
+        osmPath = ops.Path(ops.OpenStudioUtilitiesCore.toPath(osmFile))
+
     # create idf - I separated this job as putting them together
     # was making EnergyPlus to crash
     idfFolder, idfPath = osmToidf(workingDir, projectName, osmPath)
