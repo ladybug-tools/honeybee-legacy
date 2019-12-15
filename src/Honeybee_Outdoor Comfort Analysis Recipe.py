@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Outdoor Comfort Analysis Recipe"
 ghenv.Component.NickName = 'OutdoorComfRecipe'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nDEC_15_2019'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -598,7 +598,7 @@ def checkTheInputs():
         checkData7 = True
         cloA = 0.7
         if cloAbsorptivity_ != None:
-            if cloAbsorptivity_ <= 1.0 and cloAbsorptivity_ >= 0.0: floorR = cloAbsorptivity_
+            if cloAbsorptivity_ <= 1.0 and cloAbsorptivity_ >= 0.0: cloA = cloAbsorptivity_
             else:
                 checkData7 = False
                 warning = 'cloAbsorptivity_ must be a value between 0 and 1.'
