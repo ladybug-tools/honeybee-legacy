@@ -29,7 +29,7 @@ WARNING: This component does not write custom schedules or materials within the 
 Accordingly, to properly load objects agian, you must connect the full strings of these objects to a "Add to EnergyPlus Library" component in any GH cript that loads the HBZones from the file.
 
 -
-Provided by Honeybee 0.0.64
+Provided by Honeybee 0.0.65
 
     Args:
         _HBObjects: A list of Honeybee objects
@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.64\nJAN_30_2019'
+ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"

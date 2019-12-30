@@ -24,7 +24,7 @@
 Refine simulation for an existing Radiance scene (.oct file)
 
 -
-Provided by Honeybee 0.0.64
+Provided by Honeybee 0.0.65
 
     Args:
         octFile_: A valid Radiance scene file
@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Refine Daylight Simulation"
 ghenv.Component.NickName = 'refineDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"

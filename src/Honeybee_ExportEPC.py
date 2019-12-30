@@ -25,7 +25,7 @@ Export to Energy Performace Calculator (EPC)
 ... Add more description here
 
 -
-Provided by Honeybee 0.0.64
+Provided by Honeybee 0.0.65
 
     Args:
         _HBZones: Honeybee Zones
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.64
 """
 ghenv.Component.Name = "Honeybee_ExportEPC"
 ghenv.Component.NickName = 'Export to EPC'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"

@@ -27,7 +27,7 @@ The first is that it can be used to assign shade objects to HBZones prior to sim
 _
 The second way to use the component is to create test shade areas for shade benefit evaluation after an energy simulation has already been run.  In this case, the component helps keep the data tree paths of heating, cooling and beam gain synced with that of the zones and windows.  For this, you would take imported EnergyPlus results and hook them up to the "zoneData" inputs and use the output "zoneDataTree" in the shade benefit evaluation.
 -
-Provided by Honeybee 0.0.64
+Provided by Honeybee 0.0.65
     
     Args:
         _HBObjects: The HBZones or HBSurfaces out of any of the HB components that generate or alter zones.
@@ -84,7 +84,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.64\nSEP_05_2019'
+ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

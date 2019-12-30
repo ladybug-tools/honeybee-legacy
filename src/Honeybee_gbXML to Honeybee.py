@@ -30,7 +30,7 @@ Loads, schedules, and HVAC systems are not currently imported by this component
 and must be reassigned using Honeybee components.
 -
 
-Provided by Honeybee 0.0.64
+Provided by Honeybee 0.0.65
     
     Args:
         _filepath: Full filepath to xml file.
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_gbXML to Honeybee"
 ghenv.Component.NickName = 'XMLTOHB'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_30_2018'
+ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

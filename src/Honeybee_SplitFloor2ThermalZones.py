@@ -35,7 +35,7 @@ Therefore, it is usually customary to break up a building depending on the areas
 This includes breaking up the building into floors (since each floor can have a different microclimate) and breaking up each floor into a core zone and perimeter zones (since each side of the buidling gets a different amount of solar gains and losses/gains through the envelope).
 This component helps break up building masses in such a manner.
 -
-Provided by Honeybee 0.0.64
+Provided by Honeybee 0.0.65
 
     Args:
         _bldgFloors: A Closed brep or list of closed breps representing building floors. In this WIP only convex geometries and very simple concave geometries will succeed. You should prepare the massing of your building by dividing it into convex volumes before using this component. You can use the Honeybee_SplitBuildingMass2Floors to generate floors from a building mass.
@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = 'Honeybee_SplitFloor2ThermalZones'
 ghenv.Component.NickName = 'Split2Zone'
-ghenv.Component.Message = 'VER 0.0.64\nJAN_28_2019'
+ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -841,7 +841,7 @@ class Shape:
             dir_next = edge_next[1]-edge_next[0]
             dir_prev.Unitize()
             dir_next.Unitize()
-
+            
             # Get angle / Make this own function?
             dotprod = rc.Geometry.Vector3d.Multiply(dir_next,dir_prev)
             cos_theta = dotprod/(dir_next.Length * dir_prev.Length)
@@ -863,7 +863,7 @@ class Shape:
             if inrad > math.pi:
                 curr_node.data.is_reflex = True
                 ##debug.append(curr_node.data.vertex)
-
+            
             #print 'deg:', round(math.degrees(inrad),2)
             #print 'is reflex:', curr_node.data.is_reflex
 

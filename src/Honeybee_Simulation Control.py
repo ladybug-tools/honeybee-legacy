@@ -23,7 +23,7 @@
 """
 Use this component to set EnergyPlus Simulation Controls such as whether to run certain types of HVAC sizing calculations, etc.
 -
-Provided by Honeybee 0.0.64
+Provided by Honeybee 0.0.65
 
     Args:
         doZoneSizingCalculation_: Set to "True" to have EnergyPlus do a sizing calculation for the zones.  The default is set to "True."
@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Simulation Control"
 ghenv.Component.NickName = 'simControl'
-ghenv.Component.Message = 'VER 0.0.64\nJUN_01_2019'
+ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

@@ -23,7 +23,7 @@
 """
 Use this component to export OpenStudio model to gbXML file.
 -
-Provided by Honeybee 0.0.64
+Provided by Honeybee 0.0.65
     
     Args:
         _model: An OpenStudio model.
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_OpenStudio to gbXML"
 ghenv.Component.NickName = 'OpenStudioToXML'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
