@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.64
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.64\nNOV_20_2018'
+ghenv.Component.Message = 'VER 0.0.64\nDEC_30_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -107,6 +107,7 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Heating Coil Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Humidifier Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Fan Electric Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Cooling Tower Fan Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Ventilation Fan Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Lights Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Electric Equipment Electric Energy, " + timePeriod)
