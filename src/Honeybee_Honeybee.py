@@ -9458,7 +9458,7 @@ if checkIn.letItFly:
         # Function to sort vrsions of software
         def getversion(filePath):
             ver = ''.join(s for s in filePath if (s.isdigit() or s == '.'))
-            return sum(int(i) * d ** 10 for d, i in enumerate(reversed(ver.split('.'))))
+            return sum(int(d) * (10 ** i) for i, d in enumerate(reversed(ver.split('.'))))
         
         sc.sticky["honeybee_folders"] = {}
         
