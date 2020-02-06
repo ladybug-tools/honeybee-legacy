@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.65\nFEB_05_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -328,7 +328,7 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
         
         values = hb_EPObjectsAux.getEPObjectDataByName(windowShading)
         if values[4][0] != '' and values[4][0].upper() not in scheduleCollection:
-            dumpAllSchedules([values[4][0]])
+            scheduleCollection.append([values[4][0]])
         if values[2][0] != '':
             # Iniitalize for construction (for switchable glazing).
             constrName = values[2][0]
