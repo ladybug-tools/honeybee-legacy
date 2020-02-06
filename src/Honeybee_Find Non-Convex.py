@@ -2,7 +2,7 @@
 #
 # This file is part of Honeybee.
 #
-# Copyright (c) 2013-2018, Devang Chauhan <devang@outlook.in>
+# Copyright (c) 2013-2020, Devang Chauhan <devang@outlook.in>
 # Honeybee is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
 # by the Free Software Foundation; either version 3 of the License,
@@ -52,8 +52,8 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_Find Non-Convex"
 ghenv.Component.NickName = 'IsConvex'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Message = 'VER 0.0.65\nFEB_06_2020'
+ghenv.Component.Category = 'HB-Legacy'
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
