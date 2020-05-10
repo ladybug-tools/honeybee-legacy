@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2020, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -43,9 +43,9 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_Read HVAC Sizing"
 ghenv.Component.NickName = 'readEio'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.65\nMAY_09_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = 'HB-Legacy'
 ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
 #compatibleLBVersion = VER 0.0.59\nAPR_04_2015
@@ -185,8 +185,9 @@ def main(keywords):
                                 zoneNames.append(zoneName)
                             elif 'Des Sens Cool Load' in col:
                                 coolCols.append(colCount)
-                        coolDesLoad.append(createHeader('Design Day Cooling Load', zoneName))
-                        heatDesLoad.append(createHeader('Design Day Heating Load', zoneName))
+                        for zoneCount, zoneName in enumerate(zoneNames):
+                            coolDesLoad.append(createHeader('Design Day Cooling Load', zoneName))
+                            heatDesLoad.append(createHeader('Design Day Heating Load', zoneName))
                     elif 'Peak' in line:
                         loadTrigger = False
                     elif loadTrigger == True:
