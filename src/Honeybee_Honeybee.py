@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.65\nFEB_06_2020'
+ghenv.Component.Message = 'VER 0.0.65\nMAY_30_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = 'HB-Legacy'
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -9463,7 +9463,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"] = {}
         
         # supported versions for EnergyPlus
-        EPVersions = ["V9-0-1", "V9-0-0", "V8-9-0", "V8-8-0", \
+        EPVersions = ["V9-3-0", "V9-2-0", "V9-1-0", "V9-0-1", "V9-0-0", "V8-9-0", "V8-8-0", \
                       "V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0", "V8-3-0", "V8-2-10", \
                       "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
@@ -9502,7 +9502,9 @@ if checkIn.letItFly:
                 folders.EPPath = "C:/%s/EnergyPlus/"%installedOPS
                 try:
                     opsNum = int(''.join(installedOPS.split('-')[-1].split('.')))
-                    if opsNum >= 270:
+                    if opsNum >= 300:
+                        EPVersion = ">=9-3-0"
+                    elif opsNum >= 270:
                         EPVersion = ">9-0-0"
                     else:
                         EPVersion = "<8-9-0"

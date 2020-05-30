@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari and Chris Mackey <mostapha@ladybug.tools and Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2020, Mostapha Sadeghipour Roudsari and Chris Mackey <mostapha@ladybug.tools and Chris@MackeyArchitecture.com> 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
 # or (at your option) any later version. 
@@ -62,9 +62,9 @@ Provided by Honeybee 0.0.65
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.65\nMAY_30_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = 'HB-Legacy'
 ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.63\nMAR_01_2018
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
@@ -365,7 +365,7 @@ class WriteIDF(object):
     
     def EPFenSurface (self, surface):
         try:
-            epVerNum = int(''.join(sc.sticky["honeybee_folders"]["EPVersion"].split('.')))
+            epVerNum = int(''.join(s for s in sc.sticky["honeybee_folders"]["EPVersion"] if s.isdigit()))
         except:
             epVerNum = 0
         glzStr = ""
@@ -729,10 +729,23 @@ class WriteIDF(object):
             '\t'+ str(coolSizFac) + ';     !- Cooling Sizing Factor\n'
     
     def EPShadowCalculation(self, calculationMethod = "AverageOverDaysInFrequency", frequency = 6, maximumFigures = 1500):
-        return '\nShadowCalculation,\n' + \
-               '\t' + calculationMethod + ',        !- Calculation Method\n' + \
+        try:
+            epVerNum = int(''.join(s for s in sc.sticky["honeybee_folders"]["EPVersion"] if s.isdigit()))
+        except:
+            epVerNum = 0
+        
+        if epVerNum >= 930:
+            calc_method = 'Periodic' if calculationMethod == 'AverageOverDaysInFrequency' else 'Timestep'
+            return '\nShadowCalculation,\n' + \
+                '\t' + 'PolygonClipping' + ',        !- Calculation Method\n' + \
+               '\t' + calc_method + ',        !- Calculation Update Method\n' + \
                '\t' + str(frequency) + ',        !- Calculation Frequency\n' + \
                '\t' + str(maximumFigures) + ';    !- Maximum Figures in Shadow Overlap Calculation\n'
+        else:
+            return '\nShadowCalculation,\n' + \
+                   '\t' + calculationMethod + ',        !- Calculation Method\n' + \
+                   '\t' + str(frequency) + ',        !- Calculation Frequency\n' + \
+                   '\t' + str(maximumFigures) + ';    !- Maximum Figures in Shadow Overlap Calculation\n'
     
     def EPBuilding(self, name= 'honeybeeBldg', north = 0, terrain = 'City',
                     solarDis = 'FullInteriorAndExteriorWithReflections', maxWarmUpDays = '',
@@ -774,7 +787,7 @@ class WriteIDF(object):
     
     def EPRunPeriod(self, name = 'annualRun', stDay = 1, stMonth = 1, endDay = 31, endMonth = 12, startDayOfWeek = 'UseWeatherFile'):
         try:
-            epVerNum = int(''.join(sc.sticky["honeybee_folders"]["EPVersion"].split('.')))
+            epVerNum = int(''.join(s for s in sc.sticky["honeybee_folders"]["EPVersion"] if s.isdigit()))
         except:
             epVerNum = 0
         
@@ -1848,7 +1861,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     print "[3 of 8] Writing geometry..."
     ZoneCollectionBasedOnSchAndLoads = {} # This will be used to create zoneLists
     try:
-        epVerNum = int(''.join(sc.sticky["honeybee_folders"]["EPVersion"].split('.')))
+        epVerNum = int(''.join(s for s in sc.sticky["honeybee_folders"]["EPVersion"] if s.isdigit()))
     except:
         epVerNum = 0
     
