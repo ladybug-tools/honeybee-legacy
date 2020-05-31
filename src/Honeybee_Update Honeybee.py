@@ -269,12 +269,6 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
                 if not os.path.isfile(dstFullPath): shutil.copy2(srcFullPath, dstFullPath)
                 # or is older than the new file
                 elif os.stat(srcFullPath).st_mtime - os.stat(dstFullPath).st_mtime > 1: shutil.copy2(srcFullPath, dstFullPath)
-            
-        # if item selector is not already copied, copy it to component folder
-        srcFullPath = os.path.join(userObjectsFolder, "ItemSelector.gha")
-        dstFullPath = os.path.join(folders.DefaultAssemblyFolder, "ItemSelector.gha")
-        if not os.path.isfile(dstFullPath):
-            shutil.copy2(srcFullPath, dstFullPath)
         
         return "Done!" , True
     
