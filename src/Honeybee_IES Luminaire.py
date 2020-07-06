@@ -82,8 +82,8 @@ from __future__ import division
 
 ghenv.Component.Name = "Honeybee_IES Luminaire"
 ghenv.Component.NickName = 'iesLuminaire'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"
 #compatibleHBVersion = VER 0.0.56\nJUL_01_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_01_2016

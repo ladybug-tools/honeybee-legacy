@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Chris Mackey <chris@ladybug.tools> 
+# Copyright (c) 2013-2020, Chris Mackey <chris@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
 Use this component to calculate the ambient resoluation (ar) needed to resolve a detail of a diven dimension in Rhino model units. The full geometry scene of HBObjects is needed to calculate this number accurately
 The resulting ar from this component can be plugged into the Honeybee_RADParameters component.
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
     
     Args:
         _HBObjects: All of the Honeybee objects that are going to be used in the daylight simulation.
@@ -36,9 +36,9 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_Ambient Resolution"
 ghenv.Component.NickName = 'AR'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nDEC_12_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

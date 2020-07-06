@@ -24,7 +24,7 @@
 """
 Use this component to lablel HBSurfaces or HBZones with their names or energy/daylight properties in the Rhino scene.  This is useful for checking whether certain properties have been assigned correctly.
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
     
     Args:
         _HBObjects: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
@@ -41,9 +41,9 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_Label Zone Surfaces"
 ghenv.Component.NickName = 'LabelSurfaces'
-ghenv.Component.Message = 'VER 0.0.65\nFEB_06_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = 'HB-Legacy'
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

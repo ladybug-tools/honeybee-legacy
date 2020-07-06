@@ -24,7 +24,7 @@
 Use this component to add a custom glazing surface to a HBSurface or HBZone.
 
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
 
     Args:
         _HBObj: A HBZone or HBSurface to which you would like to add a customized glazing surface.
@@ -48,9 +48,9 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.65\nFEB_06_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = 'HB-Legacy'
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

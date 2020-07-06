@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2020, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ Daysim calculates the outputs for the hours that the space is occupied. This com
 You can use this component to generate a Daysim schedule based of EnergyPlus schedule.
 
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
     Args:
         _occValues: A list of 0 and 1 that indicates the occupancy schedule. The length of the list should be equal to 8760. 
         _fileName_: Optional fileName for this schedule. Files will be saved to C:\Honeybee\DaysimOcc
@@ -38,9 +38,9 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_Daysim Occupancy Generator Based On List"
 ghenv.Component.NickName = 'occupancyGenerator'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

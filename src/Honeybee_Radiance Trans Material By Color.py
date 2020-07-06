@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2020, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ Radiance Trans Material
 This component is useful to create translucent materials. Many thanks to David Mead for his slides at:
 http://radiance-online.org/community/workshops/2010-freiburg/PDF/DavidMead.pdf
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
     
     Args:
         _materialName: Unique name for this material
@@ -43,9 +43,9 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_Radiance Trans Material By Color"
 ghenv.Component.NickName = 'radTransMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

@@ -23,7 +23,7 @@ Use this component to export HBZones into an IDF file, and run them through Ener
 _
 The component outputs the report from the simulation, the file path of the IDF file, and the CSV result file from the EnergyPlus run.
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
     Args:
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         _epwFile: An .epw file path on your system as a text string.
@@ -62,9 +62,9 @@ Provided by Honeybee 0.0.65
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.65\nMAY_30_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = 'HB-Legacy'
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.63\nMAR_01_2018
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015

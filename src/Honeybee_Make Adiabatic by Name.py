@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Mingbo Peng <mpen@mpenDesign.com>
+# Copyright (c) 2013-2020, Mingbo Peng <mpen@mpenDesign.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
 Make Adiabatic
 
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
 
     Args:
         HBSrfs_: A list of valid Honeybee surfaces or zones
@@ -35,9 +35,9 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_Make Adiabatic by Name"
 ghenv.Component.NickName = 'makeAdiabaticByName'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

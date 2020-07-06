@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2020, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Analyses Recipe for Annual Daylight Simulation with Daysim
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
     
     Args:
         _outputUnits_: A list of numbers to indicate output units for test points. Defualt is 2. [1] solar irradiance (W/m2), [2] illumiance (lux) - Default is 2
@@ -38,9 +38,9 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_DSParameters"
 ghenv.Component.NickName = 'DSParameters'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.63\nMAY_03_2018
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Chris Mackey <Chris@MackeyArchitecture.com.com> and Ed May <ed@bldgtyp.com>
+# Copyright (c) 2013-2020, Chris Mackey <Chris@MackeyArchitecture.com.com> and Ed May <ed@bldgtyp.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -25,7 +25,7 @@ Use this component to import the colored mesh results from a THERM simulation.  
 _
 Before you run the file in THERM, make sure that you go to Options > Preferences > Simulation and check "Save Conrad results file (.O)" in order to enure that your THERM simulation writes all results out in a format that this component understands.
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
     
     Args:
         _resultFile: The resultFileAddress from the "Write THERM File" component.  Make sure that you have opened THERM and run your file before using this component. Also, before you run the file in THERM, make sure that you go to Options > Preferences > Simulation and check "Save Conrad results file (.O)" in order to enure that your THERM simulation writes this file.
@@ -64,9 +64,9 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Read THERM Result'
 ghenv.Component.NickName = 'readTHERM'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "11 | THERM"
 #compatibleHBVersion = VER 0.0.56\nDEC_31_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

@@ -33,9 +33,9 @@ Args:
 
 ghenv.Component.Name = "Honeybee_OpenFileDirectory"
 ghenv.Component.NickName = 'fileExplorer'
-ghenv.Component.Message = 'VER 0.0.65\nFEB_06_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = 'HB-Legacy'
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass

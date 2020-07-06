@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2020, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -33,7 +33,7 @@ Soil Conductivity - http://www.engineeringtoolbox.com/thermal-conductivity-d_429
 Soil Density - http://www.engineeringtoolbox.com/dirt-mud-densities-d_1727.html
 Soil Heat Capacity - http://www.engineeringtoolbox.com/specific-heat-capacity-d_391.html
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
 
     Args:
         _HBZones: HBZones to be turned into ground zones, representative of soil.
@@ -51,9 +51,9 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_Create EP Ground"
 ghenv.Component.NickName = 'createEPGround'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

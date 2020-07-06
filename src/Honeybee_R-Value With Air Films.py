@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Chris Mackey and Abraham Yezioro <Chris@MackeyArchitecture.com, ayez@ar.technion.ac.il> 
+# Copyright (c) 2013-2020, Chris Mackey and Abraham Yezioro <Chris@MackeyArchitecture.com, ayez@ar.technion.ac.il> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ Use this component to account for air films in the U-Value and R-Value of any de
 Note that EnergyPlus has its own means of calculating the effects of air films on either side of a construction but, here, we provide an apporximate method based on an input surfaceType_.
 
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
     
     Args:
         _uValue_SI: The U-Value_SI out of either the "Honeybee_Decompose EP Construction" or the "Honeybee_Decompose EP Material."
@@ -44,9 +44,9 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_R-Value With Air Films"
 ghenv.Component.NickName = 'RValueAirFilms'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

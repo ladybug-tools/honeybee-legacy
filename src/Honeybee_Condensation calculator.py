@@ -28,7 +28,7 @@ http://andrew.rsmas.miami.edu/bmcnoldy/Humidity.html
 http://www.ajdesigner.com/phphumidity/dewpoint_equation_dewpoint_temperature.php#ajscroll
 http://forums.finehomebuilding.com/breaktime/energy-heating-insulation/dewpoint-spreadsheet
 -
-Provided by Honeybee 0.0.65
+Provided by Honeybee 0.0.66
     
     Args:
         _cnstrName: EnergyPlus construction name
@@ -74,9 +74,9 @@ Provided by Honeybee 0.0.65
 #
 ghenv.Component.Name = "Honeybee_Condensation calculator"
 ghenv.Component.NickName = 'HB_CondensationCalculator'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "13 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
