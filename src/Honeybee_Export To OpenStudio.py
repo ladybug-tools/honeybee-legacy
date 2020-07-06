@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>, Chris Mackey <chris@ladybug.tools>, and Chien Si Harriman <charriman@terabuild.com>
+# Copyright (c) 2013-2020, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>, Chris Mackey <chris@ladybug.tools>, and Chien Si Harriman <charriman@terabuild.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -72,9 +72,9 @@ Provided by Honeybee 0.0.65
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.65\nJAN_01_2020'
+ghenv.Component.Message = 'VER 0.0.65\nJUL_06_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = 'HB-Legacy'
 ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_18_2018
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
@@ -214,8 +214,13 @@ class WriteOPS(object):
     def setShadowCalculation(self, model):
         calcMethod, freq, maxFigure = self.simParameters[1]
         shadowCalculation = ops.Model.getShadowCalculation(model)
-        shadowCalculation.setMaximumFiguresInShadowOverlapCalculations(int(maxFigure))
-        shadowCalculation.setCalculationFrequency(int(freq))
+        if vernum1 < 3:
+            shadowCalculation.setMaximumFiguresInShadowOverlapCalculations(int(maxFigure))
+            shadowCalculation.setCalculationFrequency(int(freq))
+        else:
+            shadowCalculation.setShadingCalculationUpdateFrequencyMethod(calcMethod)
+            shadowCalculation.setShadingCalculationUpdateFrequency(freq)
+            shadowCalculation.setMaximumFiguresInShadowOverlapCalculations(maxFigure)
     
     def setTimestep(self, model):
         timestepInput = self.simParameters[0]
