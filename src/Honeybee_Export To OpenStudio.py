@@ -72,7 +72,7 @@ Provided by Honeybee 0.0.66
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
+ghenv.Component.Message = 'VER 0.0.66\nJUL_12_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -835,7 +835,7 @@ class WriteOPS(object):
             if values[3][0] != '':
                 ### Openstudio currently does not support any shading control other than OnIfHighSolarOnWindow.
                 # As such, there is a workaround above for now.
-                if values[3][0] == 'OnIfHighSolarOnWindow' or (vernum1 >=2 and vernum2 >= 8):
+                if values[3][0] == 'OnIfHighSolarOnWindow' or (vernum1 >2 or (vernum1 == 2 and vernum2 >= 8)):
                     OSShdCntrl.setShadingControlType(str(values[3][0]))
                 else:
                     self.replaceShdCntrl = True
@@ -1665,7 +1665,7 @@ class WriteOPS(object):
                 elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                 elif hbZones[zCount].recirculatedAirPerArea == 0:
-                    if vernum1 >= 2 and vernum2 >= 7:
+                    if vernum1 > 2 or (vernum1 == 2 and vernum2 >= 7):
                         airTerminal = ops.AirTerminalSingleDuctConstantVolumeNoReheat(model, model.alwaysOnDiscreteSchedule())
                     else:
                         airTerminal = ops.AirTerminalSingleDuctUncontrolled(model, model.alwaysOnDiscreteSchedule())
@@ -1776,7 +1776,7 @@ class WriteOPS(object):
                 elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                 elif hbZones[zCount].recirculatedAirPerArea == 0:
-                    if vernum1 >= 2 and vernum2 >= 7:
+                    if vernum1 > 2 or (vernum1 == 2 and vernum2 >= 7):
                         airTerminal = ops.AirTerminalSingleDuctConstantVolumeNoReheat(model, model.alwaysOnDiscreteSchedule())
                     else:
                         airTerminal = ops.AirTerminalSingleDuctUncontrolled(model, model.alwaysOnDiscreteSchedule())
@@ -5028,7 +5028,7 @@ class RunOPS(object):
             lines.append(otherFeatureClass.createCSVSchedString(schedule))
         
         # If a start day of the week is specified, change it.
-        if vernum1 <= 2 and vernum2 < 7:
+        if vernum1 < 2 or (vernum1 == 2 and vernum2 < 7):
             magic_num = 7
             default_d = "UseWeatherFile"
         else:
