@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.66
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
+ghenv.Component.Message = 'VER 0.0.66\nAUG_05_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -341,11 +341,46 @@ class versionCheck(object):
 class hb_findFolders():
     
     def __init__(self):
-        self.RADPath, self.RADFile = self.which('rad.exe')
-        self.EPPath, self.EPFile = self.which('EnergyPlus.exe')
-        self.DSPath, self.DSFile = self.which('gen_dc.exe')
+        found, folder = self.try_get_from_installer_folder()
+        if found:
+            self.RADPath = os.path.join(folder, 'radiance', 'bin')
+            self.RADFile = os.path.join(folder, 'radiance', 'bin', 'rad.exe')
+            self.OSPath = os.path.join(folder, 'openstudio', 'CSharp', 'openstudio')
+            self.EPPath = os.path.join(folder, 'openstudio', 'EnergyPlus')
+            self.EPFile = os.path.join(folder, 'openstudio', 'EnergyPlus', 'energyplus.exe')
+            self.DSPath = os.path.join(folder, 'DAYSIM', 'bin')
+            self.DSFile = os.path.join(folder, 'DAYSIM', 'bin', 'gen_dc.exe')
+        else:
+            self.RADPath, self.RADFile = self.which('rad.exe')
+            self.EPPath, self.EPFile = self.which('EnergyPlus.exe')
+            self.OSPath = None
+            self.DSPath, self.DSFile = self.which('gen_dc.exe')
         self.THERMPath, self.THERMFile = self.which('Therm7.exe')
-    
+
+    def try_get_from_installer_folder(self):
+        use_shell = True if os.name == 'nt' else False
+        try:
+            out = subprocess.check_output(
+                r'cmd /C REG QUERY HKEY_CURRENT_USER\SOFTWARE\MICROSOFT\WINDOWS\CURRENTVERSION\UNINSTALL /s /v InstallLocation |findstr ladybug_tools_legacy',
+                shell=use_shell)
+        except subprocess.CalledProcessError:
+            return False, None
+
+        folders = [l.strip().split() for l in out.split('\n') if l]
+        if not folders:
+            return False, None
+        for f in folders:
+            pf = f[-1]
+            if not os.path.isdir(pf):
+                continue
+            # check for path
+            if os.path.isfile(os.path.join(pf, 'openstudio', 'bin', 'openstudio.exe')) and \
+                os.path.isfile(os.path.join(pf, 'openstudio', 'EnergyPlus', 'energyplus.exe')) and \
+                os.path.isfile(os.path.join(pf, 'radiance', 'bin', 'rad.exe')):
+                    return True, pf
+        else:
+            return False, None
+
     def which(self, program):
         """
         Check for path. Modified from this link:
@@ -9455,7 +9490,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_release"] = versionCheck()
         folders = hb_findFolders()
         
-        # Function to sort vrsions of software
+        # Function to sort versions of software
         def getversion(filePath):
             ver = ''.join(s for s in filePath if (s.isdigit() or s == '.'))
             return sum(int(d) * (10 ** i) for i, d in enumerate(reversed(ver.split('.'))))
@@ -9469,108 +9504,113 @@ if checkIn.letItFly:
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
         EPVersion = ''
-        if folders.EPPath != None:
-            # Honeybee has already found EnergyPlus make sure it's an acceptable version
-            EPVersion = os.path.split(folders.EPPath)[-1].split("EnergyPlus")[-1]
-            if EPVersion not in EPVersions:
-                #Not an acceptable version so remove it from the path
-                folders.EPPath = None
-        if folders.EPPath == None:
-            for EPVers in EPVersions:
-                if os.path.isdir("C:\EnergyPlus" + EPVers + "\\"):
-                    folders.EPPath = "C:\EnergyPlus" + EPVers + "\\"
-                    EPVersion = EPVers
-        
-        # check for OpenStudio Folder.
-        openStudioLibFolder = None
-        QtFolder = None
-        
-        installedOPS1 = [f for f in os.listdir("C:\\Program Files") if f.lower().startswith("openstudio")]
-        installedOPS2 = [f for f in os.listdir("C:\\") if f.lower().startswith("openstudio")]
-        try:
-            installedOPS1 = sorted(installedOPS1, key=getversion, reverse=True)
-            installedOPS2 = sorted(installedOPS2, key=getversion, reverse=True)
-        except Exception as e:
-            print('Failed to sort OpenStudio installation folders.')
-        
-        if len(installedOPS2) != 0:
-            installedOPS = installedOPS2[0]
-            openStudioLibFolder = "C:/%s/CSharp/openstudio"%installedOPS
-            QtFolder = "C:/%s/Ruby/"%installedOPS
-            # Grab the version of EP that installs with OpenStudio
-            if os.path.isdir("C:/%s/EnergyPlus/"%installedOPS):
-                folders.EPPath = "C:/%s/EnergyPlus/"%installedOPS
-                try:
-                    opsNum = int(''.join(installedOPS.split('-')[-1].split('.')))
-                    if opsNum >= 300:
-                        EPVersion = ">=9-3-0"
-                    elif opsNum >= 270:
-                        EPVersion = ">9-0-0"
-                    else:
-                        EPVersion = "<8-9-0"
-                except:
-                    EPVersion = ""
-            if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "OpenStudio.dll")):
-                # Add Openstudio to the path if it is not there already.
-                if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
-                    os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
-                # Try to download the EP Run Files that are no longer distributed with OpenStudio but are necessary for Honeybee.
-                if not os.path.isfile('C:/%s/EnergyPlus/Epl-run.bat'%installedOPS):
+        if folders.OSPath:
+            openStudioLibFolder = folders.OSPath
+            QtFolder = None
+            installedOPS = 'OpenStudio>=3.0'
+        else:
+            if folders.EPPath != None:
+                # Honeybee has already found EnergyPlus make sure it's an acceptable version
+                EPVersion = os.path.split(folders.EPPath)[-1].split("EnergyPlus")[-1]
+                if EPVersion not in EPVersions:
+                    #Not an acceptable version so remove it from the path
+                    folders.EPPath = None
+            if folders.EPPath == None:
+                for EPVers in EPVersions:
+                    if os.path.isdir("C:\EnergyPlus" + EPVers + "\\"):
+                        folders.EPPath = "C:\EnergyPlus" + EPVers + "\\"
+                        EPVersion = EPVers
+            
+            # check for OpenStudio Folder.
+            openStudioLibFolder = None
+            QtFolder = None
+            
+            installedOPS1 = [f for f in os.listdir("C:\\Program Files") if f.lower().startswith("openstudio")]
+            installedOPS2 = [f for f in os.listdir("C:\\") if f.lower().startswith("openstudio")]
+            try:
+                installedOPS1 = sorted(installedOPS1, key=getversion, reverse=True)
+                installedOPS2 = sorted(installedOPS2, key=getversion, reverse=True)
+            except Exception as e:
+                print('Failed to sort OpenStudio installation folders.')
+            
+            if len(installedOPS2) != 0:
+                installedOPS = installedOPS2[0]
+                openStudioLibFolder = "C:/%s/CSharp/openstudio"%installedOPS
+                QtFolder = "C:/%s/Ruby/"%installedOPS
+                # Grab the version of EP that installs with OpenStudio
+                if os.path.isdir("C:/%s/EnergyPlus/"%installedOPS):
+                    folders.EPPath = "C:/%s/EnergyPlus/"%installedOPS
                     try:
-                        client = System.Net.WebClient()
-                        client.DownloadFile('https://github.com/mostaphaRoudsari/honeybee/raw/master/resources/EPRunFiles/Epl-run.bat', 'C:/%s/EnergyPlus/Epl-run.bat'%installedOPS)
-                    except Exception, e:
-                        warning = 'Failed to download the files needed to run EnergyPlus with OpenStudio 2.x.'
-                        warning += '\n' + `e`
-                        print warning
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-                if not os.path.isdir('C:/%s/EnergyPlus/PostProcess/'%installedOPS):
-                    try:
-                        client = System.Net.WebClient()
-                        client.DownloadFile('https://github.com/mostaphaRoudsari/honeybee/raw/master/resources/EPRunFiles/PostProcess.zip', 'C:/%s/EnergyPlus/PostProcess.zip'%installedOPS)
-                        sourceFile = 'C:/%s/EnergyPlus/PostProcess.zip'%installedOPS
-                        with zipfile.ZipFile(sourceFile) as zf:
-                            for member in zf.infolist():
-                                words = member.filename.split('\\')
-                                path = 'C:/%s/EnergyPlus/'%installedOPS
-                                for word in words[:-1]:
-                                    drive, word = os.path.splitdrive(word)
-                                    head, word = os.path.split(word)
-                                    if word in (os.curdir, os.pardir, ''): continue
-                                    path = os.path.join(path, word)
-                                zf.extract(member, path)
-                    except Exception, e:
-                        warning = 'Failed to download the files needed to PostProcess EnergyPlus results with OpenStudio 2.x.'
-                        warning += '\n' + `e`
-                        print warning
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-                if not os.path.isdir('C:/%s/EnergyPlus/PreProcess/'%installedOPS):
-                    os.mkdir('C:/%s/EnergyPlus/PreProcess/'%installedOPS)
-            else:
-                openStudioLibFolder = None
-                QtFolder = None
-        elif len(installedOPS1) != 0:
-            installedOPS = installedOPS1[0]
-            openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS
-            QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS
-            for EPVers in EPVersions:
-                versStr = EPVers.replace('V', '-')
-                if os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + versStr + "/"):
-                    folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + versStr + "//"
-                    EPVersion = EPVers
-                elif os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + EPVers + "/"):
-                    folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + EPVers + "//"
-                    EPVersion = EPVers
-            if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
-                # openstudio is there and we are good to go.
-                # add folders to path.
-                if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
-                    os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
-            else:
-                openStudioLibFolder = None
-                QtFolder = None
+                        opsNum = int(''.join(installedOPS.split('-')[-1].split('.')))
+                        if opsNum >= 300:
+                            EPVersion = ">=9-3-0"
+                        elif opsNum >= 270:
+                            EPVersion = ">9-0-0"
+                        else:
+                            EPVersion = "<8-9-0"
+                    except:
+                        EPVersion = ""
+                if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "OpenStudio.dll")):
+                    # Add Openstudio to the path if it is not there already.
+                    if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
+                        os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
+                    # Try to download the EP Run Files that are no longer distributed with OpenStudio but are necessary for Honeybee.
+                    if not os.path.isfile('C:/%s/EnergyPlus/Epl-run.bat'%installedOPS):
+                        try:
+                            client = System.Net.WebClient()
+                            client.DownloadFile('https://github.com/mostaphaRoudsari/honeybee/raw/master/resources/EPRunFiles/Epl-run.bat', 'C:/%s/EnergyPlus/Epl-run.bat'%installedOPS)
+                        except Exception, e:
+                            warning = 'Failed to download the files needed to run EnergyPlus with OpenStudio 2.x.'
+                            warning += '\n' + `e`
+                            print warning
+                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                    if not os.path.isdir('C:/%s/EnergyPlus/PostProcess/'%installedOPS):
+                        try:
+                            client = System.Net.WebClient()
+                            client.DownloadFile('https://github.com/mostaphaRoudsari/honeybee/raw/master/resources/EPRunFiles/PostProcess.zip', 'C:/%s/EnergyPlus/PostProcess.zip'%installedOPS)
+                            sourceFile = 'C:/%s/EnergyPlus/PostProcess.zip'%installedOPS
+                            with zipfile.ZipFile(sourceFile) as zf:
+                                for member in zf.infolist():
+                                    words = member.filename.split('\\')
+                                    path = 'C:/%s/EnergyPlus/'%installedOPS
+                                    for word in words[:-1]:
+                                        drive, word = os.path.splitdrive(word)
+                                        head, word = os.path.split(word)
+                                        if word in (os.curdir, os.pardir, ''): continue
+                                        path = os.path.join(path, word)
+                                    zf.extract(member, path)
+                        except Exception, e:
+                            warning = 'Failed to download the files needed to PostProcess EnergyPlus results with OpenStudio 2.x.'
+                            warning += '\n' + `e`
+                            print warning
+                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                    if not os.path.isdir('C:/%s/EnergyPlus/PreProcess/'%installedOPS):
+                        os.mkdir('C:/%s/EnergyPlus/PreProcess/'%installedOPS)
+                else:
+                    openStudioLibFolder = None
+                    QtFolder = None
+            elif len(installedOPS1) != 0:
+                installedOPS = installedOPS1[0]
+                openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS
+                QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS
+                for EPVers in EPVersions:
+                    versStr = EPVers.replace('V', '-')
+                    if os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + versStr + "/"):
+                        folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + versStr + "//"
+                        EPVersion = EPVers
+                    elif os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + EPVers + "/"):
+                        folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + EPVers + "//"
+                        EPVersion = EPVers
+                if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
+                    # openstudio is there and we are good to go.
+                    # add folders to path.
+                    if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
+                        os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
+                else:
+                    openStudioLibFolder = None
+                    QtFolder = None
         
-        if openStudioLibFolder == None or QtFolder == None:
+        if openStudioLibFolder is None:
             msg1 = "Honeybee cannot find OpenStudio on your system.\n" + \
                 "You wont be able to use the Export to OpenStudio component.\n" + \
                 "Download the latest OpenStudio for Windows from:\n"
