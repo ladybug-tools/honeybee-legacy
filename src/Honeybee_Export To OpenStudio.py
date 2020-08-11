@@ -72,7 +72,7 @@ Provided by Honeybee 0.0.66
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.66\nJUL_12_2020'
+ghenv.Component.Message = 'VER 0.0.66\nAUG_11_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -114,11 +114,14 @@ if sc.sticky.has_key('honeybee_release'):
             osVersion = openStudioLibFolder.split('-')[-1].split('/')[0]
         except:
             pass
-        try:
-            vernum1, vernum2 = int(osVersion.split('.')[0]), int(osVersion.split('.')[1])
-        except:
-            vernum1 = 1
-            vernum2 = 0
+        if 'ladybug_tools_legacy' in osVersion:
+            vernum1, vernum2 = 3, 0
+        else:
+            try:
+                vernum1, vernum2 = int(osVersion.split('.')[0]), int(osVersion.split('.')[1])
+            except:
+                vernum1 = 1
+                vernum2 = 0
         
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
