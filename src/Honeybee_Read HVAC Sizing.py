@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.66
 
 ghenv.Component.Name = "Honeybee_Read HVAC Sizing"
 ghenv.Component.NickName = 'readEio'
-ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
+ghenv.Component.Message = 'VER 0.0.66\nOCT_20_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -88,7 +88,10 @@ def dict2Tree(dict):
         for text in dict[zone][0]:
             textInfo.Add(text, GH_Path(zCount))
         for num in dict[zone][1]:
-            numInfo.Add(float(num), GH_Path(zCount))
+            try:
+                numInfo.Add(float(num), GH_Path(zCount))
+            except Exception:  # incorrectly-formatted EIO file
+                pass
     return textInfo, numInfo
 
 def main(keywords):
