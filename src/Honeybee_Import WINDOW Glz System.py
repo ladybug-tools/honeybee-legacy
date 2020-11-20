@@ -61,7 +61,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW Glz System'
 ghenv.Component.NickName = 'importWINDOW'
-ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
+ghenv.Component.Message = 'VER 0.0.66\nOCT_20_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -213,7 +213,7 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
             elif 'Inside' in line and materialTrigger1 == True:
                 materialTrigger2 = False
             elif 'Uvalue' in line and headerTrigger == True:
-                cogUValue = float(line.split(':')[-1].strip())
+                cogUValue = float(line.split(':')[-1].replace('[W/m2-K]', '').replace('[Btu/h-ft2-F]', '').strip())
             elif 'SHGCc' in line and headerTrigger == True:
                 SHGC = float(line.split(':')[-1].strip())
             elif 'Vtc' in line and headerTrigger == True:
@@ -262,13 +262,14 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
                 filmCoeff = (heatFlowFactor * dimHeatFlow) + (5.81176 * glzSysEmiss[-1]) + 0.9629
                 indoorProps.append(filmCoeff)
         textFile.close()
-    except:
+    except Exception as e:
         try: textFile.close()
         except: pass
         msg = "Material properties not found in txt file. \nMake sure that your version of LBNL WINDOW is up to date."
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, msg)
+        msg = '{}\n{}'.format(msg, e)
         print msg
-        return -1
+        print headerTrigger
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, msg)
     
     # Convert U value to SI if necessary.
     if IPTrigger == True and cogUValue != None:
