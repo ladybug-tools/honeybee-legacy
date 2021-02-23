@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.66
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass2Floors'
 ghenv.Component.NickName = 'Split2Floors'
-ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
+ghenv.Component.Message = 'VER 0.0.66\nFEB_23_2021'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -321,7 +321,10 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
                     lastPiece.append(restOfmass)
                     pieces = restOfmass.Split(srf.ToBrep(), tolerance)
 
-                    if len(pieces)== 2 and lb_visualization.calculateBB([pieces[0]], True)[-1].Z < lb_visualization.calculateBB([pieces[1]], True)[-1].Z:
+                    if len(pieces)== 2:
+                        # swap order so it's compatible w/ rest of code (fix for R7 bug) 
+                        if lb_visualization.calculateBB([pieces[0]], True)[-1].Z > lb_visualization.calculateBB([pieces[1]], True)[-1].Z:
+                            pieces[0], pieces[1] = pieces[1], pieces[0]
                         try:
                             zone = pieces[0].CapPlanarHoles(tolerance);
                             if zone!=None:
