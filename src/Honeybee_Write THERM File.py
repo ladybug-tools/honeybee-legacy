@@ -57,7 +57,7 @@ from shutil import copyfile
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.66\nJUL_07_2020'
+ghenv.Component.Message = 'VER 0.0.65\nJUN_02_2021'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "HB-Legacy"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -276,7 +276,7 @@ def checkTheInputs():
         if str(polygon.polylineGeo.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
             polygon.polylineGeo.Reverse()
         try:
-            if str(rc.RhinoApp.Version).startswith('6'):
+            if int(str(rc.RhinoApp.Version)[0]) >= 6:
                 polygon.polylineGeo.Reverse()
         except:
             pass
@@ -340,7 +340,7 @@ def checkTheInputs():
     if str(encircling.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
         encircling.Reverse()
     try:
-        if str(rc.RhinoApp.Version).startswith('6'):
+        if int(str(rc.RhinoApp.Version)[0]) >= 6:
             encircling.Reverse()
     except:
         pass
